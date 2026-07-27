@@ -268,7 +268,136 @@ app.get('/', async (req: Request, res: Response) => {
       font-weight: 600;
     }
 
-    /* Metric Cards Grid - Plus Jakarta Sans Bold Typography */
+    /* Automated Insights Banner */
+    .insights-card {
+      background: linear-gradient(135deg, rgba(0, 198, 255, 0.12), rgba(0, 114, 255, 0.06));
+      border: 1px solid rgba(0, 198, 255, 0.25);
+      border-radius: 20px;
+      padding: 1.35rem 1.6rem;
+      margin-bottom: 1.75rem;
+      backdrop-filter: blur(16px);
+    }
+
+    .insights-header {
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--theme-blue);
+      margin-bottom: 0.5rem;
+    }
+
+    .insights-text {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-white);
+      line-height: 1.6;
+    }
+
+    /* Monthly Goal Progress Card */
+    .goal-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .goal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.8rem;
+    }
+
+    .goal-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-gray);
+    }
+
+    .goal-stats {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--theme-blue);
+    }
+
+    .progress-bar-bg {
+      background: rgba(255, 255, 255, 0.08);
+      height: 12px;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 0.6rem;
+    }
+
+    .progress-bar-fill {
+      background: linear-gradient(90deg, var(--theme-blue), var(--theme-blue-deep));
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 12px var(--theme-blue-glow);
+    }
+
+    .goal-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    /* Personal Records (PRs) Section */
+    .prs-section {
+      margin-bottom: 1.75rem;
+    }
+
+    .prs-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-white);
+      margin-bottom: 0.9rem;
+    }
+
+    .prs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 1rem;
+    }
+
+    .pr-card {
+      background: rgba(0, 198, 255, 0.06);
+      border: 1px solid rgba(0, 198, 255, 0.2);
+      border-radius: 16px;
+      padding: 1.1rem;
+    }
+
+    .pr-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+      margin-bottom: 0.3rem;
+    }
+
+    .pr-value {
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--theme-blue);
+    }
+
+    .pr-date {
+      font-size: 0.72rem;
+      color: var(--text-gray);
+      margin-top: 0.3rem;
+    }
+
+    /* Metric Cards Grid */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
@@ -600,6 +729,54 @@ app.get('/', async (req: Request, res: Response) => {
       </div>
     </div>
 
+    <!-- Automated Performance Insights Banner -->
+    <div class="insights-card">
+      <div class="insights-header">Performance Trend Insights</div>
+      <div class="insights-text" id="insightsContent">Analyzing your recent running activities...</div>
+    </div>
+
+    <!-- Monthly Goal Tracker -->
+    <div class="goal-card">
+      <div class="goal-header">
+        <div class="goal-title">Monthly Target Goal (100 km)</div>
+        <div class="goal-stats" id="goalPercentage">0% Completed</div>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="goalProgressBar" style="width: 0%"></div>
+      </div>
+      <div class="goal-footer">
+        <span id="goalProgressSubtext">0.00 km / 100.00 km completed</span>
+        <span id="goalRemainingSubtext">100.00 km remaining this month</span>
+      </div>
+    </div>
+
+    <!-- Personal Records (PRs) Section -->
+    <div class="prs-section">
+      <div class="prs-title">Personal Records & Highlights</div>
+      <div class="prs-grid">
+        <div class="pr-card">
+          <div class="pr-label">Longest Run</div>
+          <div class="pr-value" id="prLongestRun">-</div>
+          <div class="pr-date" id="prLongestDate">All Time</div>
+        </div>
+        <div class="pr-card">
+          <div class="pr-label">Fastest Pace</div>
+          <div class="pr-value" id="prFastestPace">-</div>
+          <div class="pr-date" id="prFastestDate">All Time</div>
+        </div>
+        <div class="pr-card">
+          <div class="pr-label">Highest Strain</div>
+          <div class="pr-value" id="prHighestStrain">-</div>
+          <div class="pr-date" id="prStrainDate">WHOOP 0-21</div>
+        </div>
+        <div class="pr-card">
+          <div class="pr-label">Max Calorie Burn</div>
+          <div class="pr-value" id="prMaxCalories">-</div>
+          <div class="pr-date" id="prCaloriesDate">Single Session</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Summary Metrics Grid -->
     <div class="grid">
       <div class="card">
@@ -800,7 +977,10 @@ app.get('/', async (req: Request, res: Response) => {
         const data = await res.json();
         const runs = data.runs || [];
 
-        // Update KPI Cards
+        // Calculate All-Time PRs & Monthly Goal from full run dataset
+        calculatePRsAndGoals(runs);
+
+        // Update KPI Cards for selected period
         let totalDistKm = 0;
         let totalDurationMs = 0;
         let totalPaceDistKm = 0;
@@ -850,6 +1030,9 @@ app.get('/', async (req: Request, res: Response) => {
         const avgHrVal = hrCount > 0 ? Math.round(totalAvgHr / hrCount) : null;
         document.getElementById('kpiAvgHr').innerText = avgHrVal ? \`\${avgHrVal} / \${maxHrReached} bpm\` : 'N/A';
 
+        // Render Automated Insights
+        renderInsights(runs, totalDistKm, totalPaceDurationMs, totalPaceDistKm, strainCount > 0 ? (totalStrain / strainCount) : 0, avgHrVal);
+
         // Render Table Rows
         if (runs.length === 0) {
           tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-dim)">No running activities found for the selected date period.</td></tr>';
@@ -897,6 +1080,115 @@ app.get('/', async (req: Request, res: Response) => {
       } catch (err) {
         tbody.innerHTML = \`<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: #ef4444">Error loading data: \${err.message}</td></tr>\`;
       }
+    }
+
+    function calculatePRsAndGoals(runs) {
+      if (!runs || runs.length === 0) return;
+
+      // 1. Personal Records (PRs)
+      let longestRun = 0, longestRunDate = '';
+      let fastestPaceDec = 999, fastestPaceStr = 'N/A', fastestPaceDate = '';
+      let maxStrain = 0, maxStrainDate = '';
+      let maxCalories = 0, maxCalDate = '';
+
+      // Monthly Goal (Current Month)
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      let thisMonthKm = 0;
+
+      runs.forEach(r => {
+        const d = new Date(r.start_time);
+        const dStr = (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear();
+
+        let distKm = 0;
+        if (r.distance_km) distKm = Number(r.distance_km);
+        else if (r.distance_meters) distKm = Number(r.distance_meters) / 1000;
+
+        // Longest Run
+        if (distKm > longestRun) {
+          longestRun = distKm;
+          longestRunDate = dStr;
+        }
+
+        // Fastest Pace (for runs > 0.5 km)
+        if (distKm > 0.5 && r.duration_ms) {
+          const paceDec = calcPaceDec(r.duration_ms, distKm);
+          if (paceDec && paceDec < fastestPaceDec) {
+            fastestPaceDec = paceDec;
+            fastestPaceStr = formatPaceDecToString(paceDec);
+            fastestPaceDate = dStr;
+          }
+        }
+
+        // Highest Strain
+        if (r.strain && Number(r.strain) > maxStrain) {
+          maxStrain = Number(r.strain);
+          maxStrainDate = dStr;
+        }
+
+        // Max Calories
+        const cal = extractCalories(r);
+        if (cal && cal > maxCalories) {
+          maxCalories = cal;
+          maxCalDate = dStr;
+        }
+
+        // Monthly Goal Accumulation
+        if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+          thisMonthKm += distKm;
+        }
+      });
+
+      document.getElementById('prLongestRun').innerText = longestRun > 0 ? longestRun.toFixed(2) + ' km' : '-';
+      document.getElementById('prLongestDate').innerText = longestRunDate || 'All Time';
+
+      document.getElementById('prFastestPace').innerText = fastestPaceStr;
+      document.getElementById('prFastestDate').innerText = fastestPaceDate || 'All Time';
+
+      document.getElementById('prHighestStrain').innerText = maxStrain > 0 ? maxStrain.toFixed(1) : '-';
+      document.getElementById('prStrainDate').innerText = maxStrainDate || 'WHOOP 0-21';
+
+      document.getElementById('prMaxCalories').innerText = maxCalories > 0 ? maxCalories.toLocaleString() + ' kcal' : '-';
+      document.getElementById('prCaloriesDate').innerText = maxCalDate || 'Single Session';
+
+      // 2. Monthly Target Goal Progress (Default: 100 km)
+      const targetKm = 100;
+      const percent = Math.min(100, Math.round((thisMonthKm / targetKm) * 100));
+      const remainingKm = Math.max(0, targetKm - thisMonthKm);
+
+      document.getElementById('goalPercentage').innerText = percent + '% Completed';
+      document.getElementById('goalProgressBar').style.width = percent + '%';
+      document.getElementById('goalProgressSubtext').innerText = thisMonthKm.toFixed(2) + ' km / ' + targetKm.toFixed(2) + ' km completed';
+      document.getElementById('goalRemainingSubtext').innerText = remainingKm > 0 ? remainingKm.toFixed(2) + ' km remaining this month' : 'Goal achieved!';
+    }
+
+    function renderInsights(runs, totalDistKm, totalPaceDurationMs, totalPaceDistKm, avgStrainVal, avgHrVal) {
+      const el = document.getElementById('insightsContent');
+      if (!runs || runs.length === 0) {
+        el.innerText = 'No running data available for the selected period.';
+        return;
+      }
+
+      const avgPaceStr = calcPaceString(totalPaceDurationMs, totalPaceDistKm);
+      const sessionCount = runs.length;
+
+      let trendMsg = \`Over this period, you logged \${sessionCount} running sessions covering a total of \${totalDistKm.toFixed(2)} km at an average pace of \${avgPaceStr}.\`;
+
+      if (avgStrainVal > 0) {
+        trendMsg += \` Your workouts generated an average WHOOP strain of \${avgStrainVal.toFixed(1)}/21\`;
+      }
+      if (avgHrVal) {
+        trendMsg += \` with a steady average heart rate of \${avgHrVal} BPM.\`;
+      } else {
+        trendMsg += \`.\`;
+      }
+
+      if (sessionCount >= 5) {
+        trendMsg += \` Strong training consistency! You are building solid aerobic endurance.\`;
+      }
+
+      el.innerText = trendMsg;
     }
 
     function renderCharts(runs) {
