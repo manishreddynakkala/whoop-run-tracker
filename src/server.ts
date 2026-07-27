@@ -197,26 +197,6 @@ app.get('/', async (req: Request, res: Response) => {
       gap: 12px;
     }
 
-    .theme-toggle-btn {
-      background: var(--subtle-bg);
-      border: 1px solid var(--card-border);
-      color: var(--text-dark);
-      padding: 7px 13px;
-      border-radius: 4px;
-      font-size: 0.82rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-    }
-
-    .theme-toggle-btn:hover {
-      border-color: var(--theme-blue);
-      color: var(--theme-blue);
-    }
-
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -349,6 +329,78 @@ app.get('/', async (req: Request, res: Response) => {
       font-family: inherit;
       font-size: 0.82rem;
       font-weight: 600;
+    }
+
+    /* Settings Section Cards */
+    .settings-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      max-width: 800px;
+    }
+
+    .settings-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    .settings-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-dark);
+      margin-bottom: 0.35rem;
+    }
+
+    .settings-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 1.1rem;
+    }
+
+    .settings-form-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .settings-input {
+      background: var(--subtle-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-dark);
+      padding: 9px 14px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      width: 140px;
+    }
+
+    .theme-options-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .theme-option-btn {
+      background: var(--subtle-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .theme-option-btn.active {
+      background: var(--theme-blue);
+      color: white;
+      border-color: var(--theme-blue);
     }
 
     /* Automated Insights Card */
@@ -775,21 +827,16 @@ app.get('/', async (req: Request, res: Response) => {
           <button class="top-tab-btn active" onclick="switchTab('overviewTab', this)">Overview</button>
           <button class="top-tab-btn" onclick="switchTab('analyticsTab', this)">Analytics</button>
           <button class="top-tab-btn" onclick="switchTab('historyTab', this)">History</button>
+          <button class="top-tab-btn" onclick="switchTab('settingsTab', this)">Settings</button>
         </div>
       </div>
 
-      <!-- Top Right Actions Position (Clean Text Theme Toggle, Status, Re-authenticate & Sync Data) -->
+      <!-- Top Right Actions Position (Status Badge & Sync Data) -->
       <div class="nav-right">
-        <button onclick="toggleTheme()" class="theme-toggle-btn" id="themeToggleBtn">
-          Theme: <span id="themeToggleText">Dark</span>
-        </button>
         <div class="status-badge">
           <div class="status-dot ${hasTokenRecord ? 'active' : 'inactive'}"></div>
           ${hasTokenRecord ? 'Connected' : 'Not Connected'}
         </div>
-        <a href="/auth/login" class="strava-btn strava-btn-secondary">
-          ${hasTokenRecord ? 'Re-authenticate' : 'Connect Account'}
-        </a>
         <button onclick="triggerSync()" class="strava-btn strava-btn-primary" id="syncBtn">
           Sync Data
         </button>
@@ -1024,6 +1071,47 @@ app.get('/', async (req: Request, res: Response) => {
         </table>
       </div>
     </div>
+
+    <!-- TAB 4: SETTINGS -->
+    <div class="tab-content" id="settingsTab">
+      <div class="section-header" style="margin-bottom: 1.25rem;">
+        <div class="section-title">Application Settings</div>
+      </div>
+      
+      <div class="settings-grid">
+        <!-- 1. Adjustable Monthly Goal Target Card -->
+        <div class="settings-card">
+          <div class="settings-title">Monthly Distance Goal Target</div>
+          <div class="settings-desc">Set your target running mileage in kilometers for the current calendar month.</div>
+          <div class="settings-form-group">
+            <input type="number" id="monthlyGoalInput" class="settings-input" min="1" max="1000" step="5" value="100" />
+            <span style="font-weight:700; color:var(--text-muted)">km / month</span>
+            <button onclick="saveMonthlyGoalSetting()" class="strava-btn strava-btn-primary">Save Goal</button>
+          </div>
+        </div>
+
+        <!-- 2. Application Theme Settings Card -->
+        <div class="settings-card">
+          <div class="settings-title">Appearance & Theme</div>
+          <div class="settings-desc">Choose between Light and Dark mode interface aesthetics.</div>
+          <div class="theme-options-group">
+            <button onclick="setThemeMode('light')" class="theme-option-btn" id="themeLightBtn">Light Theme</button>
+            <button onclick="setThemeMode('dark')" class="theme-option-btn" id="themeDarkBtn">Dark Theme</button>
+          </div>
+        </div>
+
+        <!-- 3. Account & Re-authentication Card -->
+        <div class="settings-card">
+          <div class="settings-title">Account & Integrations</div>
+          <div class="settings-desc">Manage your WHOOP API connection and re-authenticate if token expires.</div>
+          <div class="settings-form-group">
+            <a href="/auth/login" class="strava-btn strava-btn-secondary">
+              ${hasTokenRecord ? 'Re-authenticate WHOOP Account' : 'Connect WHOOP Account'}
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Zoom Fullscreen Modal Overlay -->
@@ -1049,39 +1137,62 @@ app.get('/', async (req: Request, res: Response) => {
     let currentEndDate = null;
     let activePreset = 'all';
     let allRunsCache = [];
+    let monthlyTargetKmSetting = 100;
     let chartInstanceDistancePace = null;
     let chartInstanceHrZones = null;
     let chartInstanceStrainHr = null;
     let chartInstanceWeeklyMileage = null;
     let modalChartInstance = null;
 
-    // Theme Management (Clean Text Only, No Emojis)
-    function initTheme() {
+    // Load Settings from Local Storage
+    function initSettings() {
+      const savedGoal = localStorage.getItem('monthlyTargetKm');
+      if (savedGoal && !isNaN(Number(savedGoal))) {
+        monthlyTargetKmSetting = Number(savedGoal);
+      }
+      document.getElementById('monthlyGoalInput').value = monthlyTargetKmSetting;
+
       const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'dark') {
+      setThemeMode(savedTheme === 'dark' ? 'dark' : 'light', false);
+    }
+
+    function setThemeMode(mode, triggerRender = true) {
+      const lightBtn = document.getElementById('themeLightBtn');
+      const darkBtn = document.getElementById('themeDarkBtn');
+
+      if (mode === 'dark') {
         document.body.classList.add('dark-mode');
-        document.getElementById('themeToggleText').innerText = 'Light';
+        localStorage.setItem('theme', 'dark');
+        if (lightBtn) lightBtn.classList.remove('active');
+        if (darkBtn) darkBtn.classList.add('active');
         Chart.defaults.color = '#94a3b8';
       } else {
         document.body.classList.remove('dark-mode');
-        document.getElementById('themeToggleText').innerText = 'Dark';
+        localStorage.setItem('theme', 'light');
+        if (lightBtn) lightBtn.classList.add('active');
+        if (darkBtn) darkBtn.classList.remove('active');
         Chart.defaults.color = '#64748b';
       }
-    }
 
-    function toggleTheme() {
-      const isDark = document.body.classList.toggle('dark-mode');
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-      
-      document.getElementById('themeToggleText').innerText = isDark ? 'Light' : 'Dark';
-      Chart.defaults.color = isDark ? '#94a3b8' : '#64748b';
-      
-      if (allRunsCache.length > 0) {
+      if (triggerRender && allRunsCache.length > 0) {
         renderCharts(allRunsCache);
       }
     }
 
-    initTheme();
+    function saveMonthlyGoalSetting() {
+      const inp = document.getElementById('monthlyGoalInput');
+      const val = Number(inp.value);
+      if (val && val > 0) {
+        monthlyTargetKmSetting = val;
+        localStorage.setItem('monthlyTargetKm', val);
+        alert('Monthly Target Goal updated to ' + val + ' km!');
+        if (allRunsCache.length > 0) {
+          calculatePRsAndGoals(allRunsCache);
+        }
+      }
+    }
+
+    initSettings();
 
     function switchTab(tabId, btnEl) {
       document.querySelectorAll('.top-tab-btn').forEach(b => b.classList.remove('active'));
@@ -1349,12 +1460,12 @@ app.get('/', async (req: Request, res: Response) => {
       document.getElementById('prMaxCalories').innerText = maxCalories > 0 ? maxCalories.toLocaleString() + ' kcal' : '-';
       document.getElementById('prCaloriesDate').innerText = maxCalDate || 'Single Session';
 
-      // Current Calendar Month Target Goal (Default: 100 km)
-      const targetKm = 100;
+      // Current Calendar Month Target Goal
+      const targetKm = monthlyTargetKmSetting || 100;
       const percent = Math.min(100, Math.round((thisMonthKm / targetKm) * 100));
       const remainingKm = Math.max(0, targetKm - thisMonthKm);
 
-      document.getElementById('goalTitleText').innerText = monthName + ' ' + currentYear + ' Target Goal (100 km)';
+      document.getElementById('goalTitleText').innerText = monthName + ' ' + currentYear + ' Target Goal (' + targetKm + ' km)';
       document.getElementById('goalPercentage').innerText = percent + '% Completed';
       document.getElementById('goalProgressBar').style.width = percent + '%';
       document.getElementById('goalProgressSubtext').innerText = thisMonthKm.toFixed(2) + ' km / ' + targetKm.toFixed(2) + ' km completed in ' + monthName;
