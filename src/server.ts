@@ -212,7 +212,7 @@ app.get('/', async (req: Request, res: Response) => {
       border-bottom-color: var(--theme-blue);
     }
 
-    /* Dedicated Mobile Secondary Tab Bar (Portrait Mode Fix) */
+    /* Dedicated Mobile Secondary Navigation Bar (Portrait Mode Fix) */
     .mobile-tab-bar {
       display: none;
       background-color: var(--nav-bg);
@@ -554,6 +554,13 @@ app.get('/', async (req: Request, res: Response) => {
       padding: 2px 6px;
       border-radius: 10px;
       text-transform: uppercase;
+    }
+
+    .ai-source-tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-top: 4px;
     }
 
     .ai-refresh-btn {
@@ -1105,6 +1112,7 @@ app.get('/', async (req: Request, res: Response) => {
           <button onclick="fetchAIInsights(true)" class="ai-refresh-btn" id="aiRefreshBtn">Refresh AI Insights</button>
         </div>
         <div class="insights-text" id="insightsContent">Analyzing your latest 10 running activities with AI...</div>
+        <div class="ai-source-tag" id="aiSourceTag">Engine: Powered by Google Gemini AI</div>
       </div>
 
       <!-- 2. Current Calendar Month Target Goal -->
@@ -1446,6 +1454,7 @@ app.get('/', async (req: Request, res: Response) => {
     // Fetch AI Coach Insights for Latest 10 Runs
     async function fetchAIInsights(isManualRefresh = false) {
       const el = document.getElementById('insightsContent');
+      const tagEl = document.getElementById('aiSourceTag');
       const btn = document.getElementById('aiRefreshBtn');
       if (btn) {
         btn.innerText = 'Analyzing...';
@@ -1470,6 +1479,11 @@ app.get('/', async (req: Request, res: Response) => {
         const data = await res.json();
         if (data && data.insight) {
           el.innerText = data.insight;
+          if (tagEl) {
+            tagEl.innerText = data.source === 'gemini' 
+              ? 'Engine: Powered by Google Gemini AI' 
+              : 'Engine: Powered by Analytical Performance AI';
+          }
         } else {
           renderLatest10Insights(allRunsCache);
         }
@@ -2437,6 +2451,9 @@ app.post('/api/insights', async (req: Request, res: Response) => {
         let dist = 0;
         if (r.distance_km) dist = Number(r.distance_km);
         else if (r.distance_meters) dist = Number(r.distance_meters) / 1000;
+        else if (r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+          dist = Number(r.raw_json.score.distance_meter) / 1000;
+        }
         
         let paceStr = 'N/A';
         if (dist > 0.1 && r.duration_ms) {
@@ -2449,17 +2466,20 @@ app.post('/api/insights', async (req: Request, res: Response) => {
 
         const strain = r.strain ? Number(r.strain).toFixed(1) : 'N/A';
         const hr = r.average_heart_rate || 'N/A';
-        return `Run ${i + 1} (${d}): ${dist.toFixed(2)} km, Pace: ${paceStr}, WHOOP Strain: ${strain}/21, Avg HR: ${hr} BPM`;
+        return `Run ${i + 1} (${d}): ${dist > 0 ? dist.toFixed(2) + ' km' : 'Indoor Run'}, Pace: ${paceStr}, WHOOP Strain: ${strain}/21, Avg HR: ${hr} BPM`;
       }).join('\n');
 
-      const prompt = `You are an elite endurance running coach analyzing a runner's latest 10 workouts from their WHOOP telemetry data:\n${summaryText}\n\nProvide a concise, 2-3 sentence personalized coach insight covering:\n1. Pace progression & consistency across these 10 runs.\n2. Heart rate efficiency & WHOOP strain balance.\n3. An actionable coaching tip for their upcoming training sessions.\nKeep it inspiring, professional, direct, and tailored strictly to their numbers. Do not include markdown headers or bullet lists, just a clean paragraph.`;
+      const prompt = `You are an elite endurance running coach analyzing a runner's latest 10 workouts from their WHOOP telemetry data:\n${summaryText}\n\nProvide a concise, 2-3 sentence personalized coach insight covering:\n1. Performance, pace progression & consistency across these 10 runs.\n2. Cardiovascular response (heart rate efficiency vs WHOOP strain balance).\n3. A specific, actionable coaching tip for their next workouts.\nKeep it inspiring, professional, direct, and tailored strictly to their numbers. Write a single clean paragraph without markdown headers or lists.`;
+
+      // Official Google Gemini 1.5 Flash endpoint
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
 
       const aiResponse = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
+        geminiUrl,
         {
           contents: [{ parts: [{ text: prompt }] }]
         },
-        { timeout: 8000 }
+        { timeout: 9000 }
       );
 
       const aiText = aiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -2467,11 +2487,11 @@ app.post('/api/insights', async (req: Request, res: Response) => {
         return res.json({ insight: aiText.trim(), source: 'gemini' });
       }
     } catch (err: any) {
-      console.warn('Gemini API call skipped or failed, using smart analytical AI engine:', err.message);
+      console.warn('Gemini API call failed, using smart analytical AI engine:', err.response?.data || err.message);
     }
   }
 
-  // Advanced Analytical AI Coach Engine
+  // Advanced Analytical AI Coach Engine Fallback
   let totalDistKm = 0;
   let totalPaceDist = 0;
   let totalPaceMs = 0;
@@ -2482,6 +2502,9 @@ app.post('/api/insights', async (req: Request, res: Response) => {
 
   latest10.forEach(r => {
     let dist = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters) / 1000 : 0);
+    if (dist === 0 && r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+      dist = Number(r.raw_json.score.distance_meter) / 1000;
+    }
     totalDistKm += dist;
     if (dist > 0.1 && r.duration_ms) {
       totalPaceDist += dist;
@@ -2491,7 +2514,6 @@ app.post('/api/insights', async (req: Request, res: Response) => {
     if (r.average_heart_rate) { totalHr += Number(r.average_heart_rate); hrCount++; }
   });
 
-  const avgDist = totalDistKm / latest10.length;
   const avgPaceDec = totalPaceDist > 0 ? (totalPaceMs / 60000) / totalPaceDist : null;
   const avgStrain = strainCount > 0 ? (totalStrain / strainCount) : 0;
   const avgHr = hrCount > 0 ? Math.round(totalHr / hrCount) : null;
@@ -2502,14 +2524,6 @@ app.post('/api/insights', async (req: Request, res: Response) => {
     const secs = Math.round((avgPaceDec - mins) * 60);
     paceStr = `${mins}:${secs < 10 ? '0' + secs : secs}/km`;
   }
-
-  // Evaluate recent pace trend vs earlier runs
-  const recentHalf = latest10.slice(0, 5);
-  const olderHalf = latest10.slice(5, 10);
-
-  let recentKm = 0, olderKm = 0;
-  recentHalf.forEach(r => recentKm += (r.distance_km ? Number(r.distance_km) : 0));
-  olderHalf.forEach(r => olderKm += (r.distance_km ? Number(r.distance_km) : 0));
 
   let trendText = `Over your last 10 runs, you accumulated ${totalDistKm.toFixed(2)} km averaging ${paceStr} per kilometer.`;
   
