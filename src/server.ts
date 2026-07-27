@@ -60,6 +60,7 @@ app.get('/', async (req: Request, res: Response) => {
       --accent-green: #00e676;
       --accent-purple: #a78bfa;
       --accent-pink: #ec4899;
+      --accent-yellow: #f59e0b;
       --text-main: #f3f4f6;
       --text-muted: #9ca3af;
     }
@@ -213,7 +214,7 @@ app.get('/', async (req: Request, res: Response) => {
     /* Summary Cards Grid */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 1rem;
       margin-bottom: 1.5rem;
     }
@@ -306,7 +307,7 @@ app.get('/', async (req: Request, res: Response) => {
 
     table {
       width: 100%;
-      min-width: 760px;
+      min-width: 780px;
       border-collapse: collapse;
       text-align: left;
     }
@@ -351,6 +352,12 @@ app.get('/', async (req: Request, res: Response) => {
       background: rgba(236, 72, 153, 0.15);
       color: var(--accent-pink);
       border: 1px solid rgba(236, 72, 153, 0.3);
+    }
+
+    .badge-cal {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-yellow);
+      border: 1px solid rgba(245, 158, 11, 0.3);
     }
   </style>
 </head>
@@ -419,6 +426,11 @@ app.get('/', async (req: Request, res: Response) => {
         <div class="card-subtitle">Hours & Mins</div>
       </div>
       <div class="card">
+        <div class="card-title">Total Calories</div>
+        <div class="card-value" id="kpiCalories" style="color: var(--accent-yellow)">-</div>
+        <div class="card-subtitle">kcal burned</div>
+      </div>
+      <div class="card">
         <div class="card-title">Average Strain</div>
         <div class="card-value" id="kpiAvgStrain" style="color: var(--accent-orange)">-</div>
         <div class="card-subtitle">WHOOP strain score</div>
@@ -478,6 +490,15 @@ app.get('/', async (req: Request, res: Response) => {
       return \`\${finalMins}:\${secsStr} /km\`;
     }
 
+    function extractCalories(r) {
+      if (r.calories) return Math.round(Number(r.calories));
+      const rawScore = r.raw_json && r.raw_json.score ? r.raw_json.score : null;
+      if (rawScore && rawScore.kilojoule) return Math.round(Number(rawScore.kilojoule) / 4.184);
+      if (rawScore && rawScore.kilojoules) return Math.round(Number(rawScore.kilojoules) / 4.184);
+      if (r.kilojoules) return Math.round(Number(r.kilojoules) / 4.184);
+      return null;
+    }
+
     async function loadRuns() {
       const tbody = document.getElementById('runsTableBody');
       tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-muted)">Loading...</td></tr>';
@@ -496,6 +517,7 @@ app.get('/', async (req: Request, res: Response) => {
         let totalDurationMs = 0;
         let totalPaceDistKm = 0;
         let totalPaceDurationMs = 0;
+        let totalCaloriesKcal = 0;
         let totalStrain = 0;
         let strainCount = 0;
         let totalAvgHr = 0;
@@ -515,6 +537,9 @@ app.get('/', async (req: Request, res: Response) => {
             totalPaceDurationMs += Number(r.duration_ms);
           }
 
+          const calVal = extractCalories(r);
+          if (calVal) totalCaloriesKcal += calVal;
+
           if (r.strain) { totalStrain += Number(r.strain); strainCount++; }
           if (r.average_heart_rate) { totalAvgHr += Number(r.average_heart_rate); hrCount++; }
           if (r.max_heart_rate && Number(r.max_heart_rate) > maxHrReached) {
@@ -524,9 +549,8 @@ app.get('/', async (req: Request, res: Response) => {
 
         document.getElementById('kpiRunsCount').innerText = runs.length;
         document.getElementById('kpiDistance').innerText = totalDistKm > 0 ? totalDistKm.toFixed(2) + ' km' : '0 km';
-
-        // Average Pace for selected period
         document.getElementById('kpiAvgPace').innerText = calcPaceString(totalPaceDurationMs, totalPaceDistKm);
+        document.getElementById('kpiCalories').innerText = totalCaloriesKcal > 0 ? totalCaloriesKcal.toLocaleString() + ' kcal' : 'N/A';
 
         const totalMins = Math.round(totalDurationMs / 60000);
         const hours = Math.floor(totalMins / 60);
@@ -562,6 +586,8 @@ app.get('/', async (req: Request, res: Response) => {
           }
 
           const paceStr = calcPaceString(r.duration_ms, distKmNum);
+          const calVal = extractCalories(r);
+          const calStr = calVal ? calVal + ' kcal' : 'N/A';
 
           return \`
             <tr>
@@ -572,7 +598,7 @@ app.get('/', async (req: Request, res: Response) => {
               <td>\${durationMin} mins</td>
               <td><span class="badge badge-strain">\${r.strain ? Number(r.strain).toFixed(1) : 'N/A'}</span></td>
               <td><span class="badge badge-hr">\${r.average_heart_rate || 'N/A'} / \${r.max_heart_rate || 'N/A'} bpm</span></td>
-              <td>\${r.calories ? Math.round(Number(r.calories)) + ' kcal' : 'N/A'}</td>
+              <td><span class="badge badge-cal">\${calStr}</span></td>
             </tr>
           \`;
         }).join('');

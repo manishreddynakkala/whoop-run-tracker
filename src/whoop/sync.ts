@@ -70,7 +70,8 @@ export async function syncWhoopWorkouts(userId: string = 'default_user'): Promis
         const distMiles = distMeter ? distMeter / 1609.344 : null;
         const distKm = distMeter ? distMeter / 1000 : null;
 
-        const kj = workout.score?.kilojoules || null;
+        // WHOOP API v2 uses singular 'kilojoule'
+        const kj = (workout.score as any)?.kilojoule || (workout.score as any)?.kilojoules || null;
         const calories = kj ? kj / 4.184 : null;
 
         const zd = workout.score?.zone_duration;
