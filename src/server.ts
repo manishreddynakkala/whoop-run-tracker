@@ -49,79 +49,81 @@ app.get('/', async (req: Request, res: Response) => {
   <title>Run Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
   <style>
     :root {
-      --bg-main: #f7f7fa;
-      --nav-bg: #ffffff;
-      --nav-border: #e6e6e8;
+      --bg-main: #fafafa;
+      --nav-bg: rgba(255, 255, 255, 0.85);
+      --nav-border: #edf2f7;
       --card-bg: #ffffff;
-      --card-border: #e2e8f0;
-      --theme-blue: #0080ff;
-      --theme-blue-hover: #0066cc;
-      --theme-sky: #00a3ff;
-      --theme-orange: #fc4c02;
-      --text-dark: #1e293b;
+      --card-border: #f1f5f9;
+      --theme-blue: #0284c7;
+      --theme-blue-hover: #0369a1;
+      --theme-sky: #38bdf8;
+      --theme-orange: #f97316;
+      --text-dark: #0f172a;
       --text-muted: #64748b;
       --text-dim: #94a3b8;
       --subtle-bg: #f8fafc;
-      --badge-bg: #f0f7ff;
-      --badge-border: #cce7ff;
-      --race-card-bg: #fff8f5;
-      --race-card-border: #ffd8cc;
+      --badge-bg: #f0f9ff;
+      --badge-border: #e0f2fe;
+      --race-card-bg: #fff7ed;
+      --race-card-border: #ffedd5;
     }
 
     body.dark-mode {
-      --bg-main: #070a12;
-      --nav-bg: #0f172a;
-      --nav-border: rgba(255, 255, 255, 0.1);
-      --card-bg: rgba(15, 23, 42, 0.85);
-      --card-border: rgba(255, 255, 255, 0.1);
-      --theme-blue: #00c6ff;
-      --theme-blue-hover: #0099cc;
-      --theme-sky: #38bdf8;
+      --bg-main: #090d16;
+      --nav-bg: rgba(15, 23, 42, 0.85);
+      --nav-border: rgba(255, 255, 255, 0.06);
+      --card-bg: #0f172a;
+      --card-border: rgba(255, 255, 255, 0.07);
+      --theme-blue: #38bdf8;
+      --theme-blue-hover: #0284c7;
+      --theme-sky: #7dd3fc;
       --text-dark: #f8fafc;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
-      --subtle-bg: rgba(255, 255, 255, 0.04);
-      --badge-bg: rgba(0, 198, 255, 0.12);
-      --badge-border: rgba(0, 198, 255, 0.25);
-      --race-card-bg: rgba(252, 76, 2, 0.08);
-      --race-card-border: rgba(252, 76, 2, 0.25);
+      --subtle-bg: rgba(255, 255, 255, 0.03);
+      --badge-bg: rgba(56, 189, 248, 0.1);
+      --badge-border: rgba(56, 189, 248, 0.2);
+      --race-card-bg: rgba(249, 115, 22, 0.08);
+      --race-card-border: rgba(249, 115, 22, 0.2);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background-color: var(--bg-main);
       color: var(--text-dark);
       min-height: 100vh;
       line-height: 1.5;
+      font-variant-numeric: tabular-nums;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       transition: background-color 0.25s ease, color 0.25s ease;
     }
 
-    /* Strava-Style Top Navigation Bar */
+    /* Minimalist Top Navigation Bar */
     .top-navbar {
       background-color: var(--nav-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--nav-border);
       position: sticky;
       top: 0;
       z-index: 1000;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
       transition: background-color 0.25s ease, border-color 0.25s ease;
     }
 
     .nav-container {
-      max-width: 1200px;
+      max-width: 1140px;
       margin: 0 auto;
       padding: 0 1.5rem;
-      height: 62px;
+      height: 58px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -130,57 +132,57 @@ app.get('/', async (req: Request, res: Response) => {
     .nav-left {
       display: flex;
       align-items: center;
-      gap: 2.25rem;
+      gap: 2rem;
     }
 
     .brand-logo {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       text-decoration: none;
     }
 
     .brand-icon {
-      background: linear-gradient(135deg, var(--theme-blue), #0052cc);
+      background: var(--theme-blue);
       color: white;
-      font-weight: 800;
-      font-size: 1.25rem;
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
+      font-weight: 700;
+      font-size: 1rem;
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .brand-name {
-      font-size: 1.35rem;
-      font-weight: 800;
+      font-size: 1.15rem;
+      font-weight: 700;
       letter-spacing: -0.03em;
       color: var(--text-dark);
     }
 
-    /* Strava Top Tabs Bar */
+    /* Minimal Top Tabs Bar */
     .top-tabs {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      height: 62px;
+      gap: 0.25rem;
+      height: 58px;
     }
 
     .top-tab-btn {
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 0.92rem;
+      font-size: 0.88rem;
       font-weight: 600;
-      height: 62px;
-      padding: 0 16px;
+      height: 58px;
+      padding: 0 14px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
-      border-bottom: 3px solid transparent;
+      border-bottom: 2px solid transparent;
       transition: all 0.2s ease;
     }
 
@@ -194,47 +196,47 @@ app.get('/', async (req: Request, res: Response) => {
       border-bottom-color: var(--theme-blue);
     }
 
-    /* Strava Top Right Action Controls */
+    /* Top Right Action Controls */
     .nav-right {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .status-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 600;
       color: var(--text-muted);
       background: var(--subtle-bg);
-      padding: 5px 12px;
+      padding: 4px 10px;
       border-radius: 20px;
       border: 1px solid var(--card-border);
     }
 
     .status-dot {
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
     }
     .status-dot.active { background-color: #10b981; }
     .status-dot.inactive { background-color: #ef4444; }
 
-    /* Strava Standard Button Style */
+    /* Minimal Standard Button Style */
     .strava-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 8px 16px;
-      border-radius: 4px;
-      font-weight: 700;
-      font-size: 0.85rem;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.82rem;
       cursor: pointer;
       text-decoration: none;
-      transition: background-color 0.2s ease, transform 0.1s ease;
+      transition: all 0.15s ease;
       border: none;
     }
 
@@ -257,8 +259,8 @@ app.get('/', async (req: Request, res: Response) => {
 
     /* Main Content Wrapper */
     .main-container {
-      max-width: 1200px;
-      margin: 2rem auto;
+      max-width: 1140px;
+      margin: 1.75rem auto;
       padding: 0 1.5rem;
     }
 
@@ -270,23 +272,22 @@ app.get('/', async (req: Request, res: Response) => {
       display: block;
     }
 
-    /* Upcoming Race Countdown Card */
+    /* Minimal Upcoming Race Countdown Card */
     .race-card {
       background: var(--race-card-bg);
       border: 1px solid var(--race-card-border);
-      border-radius: 12px;
-      padding: 1.35rem 1.6rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
     }
 
     .race-header {
-      font-size: 0.85rem;
-      font-weight: 800;
+      font-size: 0.75rem;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--theme-orange);
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.35rem;
     }
 
     .race-details-group {
@@ -298,15 +299,15 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .race-title {
-      font-size: 1.3rem;
-      font-weight: 800;
+      font-size: 1.2rem;
+      font-weight: 700;
       letter-spacing: -0.02em;
       color: var(--text-dark);
     }
 
     .race-countdown-clock {
       display: flex;
-      gap: 12px;
+      gap: 8px;
     }
 
     .countdown-unit {
@@ -315,22 +316,22 @@ app.get('/', async (req: Request, res: Response) => {
       align-items: center;
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      padding: 8px 14px;
+      padding: 6px 12px;
       border-radius: 8px;
-      min-width: 60px;
+      min-width: 56px;
     }
 
     .countdown-num {
-      font-size: 1.5rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
       color: var(--theme-orange);
       line-height: 1.1;
     }
 
     .countdown-lbl {
-      font-size: 0.68rem;
-      font-weight: 700;
+      font-size: 0.65rem;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--text-muted);
@@ -341,18 +342,17 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 1rem 1.25rem;
-      margin-bottom: 1.5rem;
+      padding: 0.85rem 1.1rem;
+      margin-bottom: 1.25rem;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
     .filter-title {
-      font-size: 0.85rem;
+      font-size: 0.78rem;
       font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
@@ -362,16 +362,16 @@ app.get('/', async (req: Request, res: Response) => {
     .preset-group {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 5px;
     }
 
     .preset-btn {
       background: var(--subtle-bg);
       border: 1px solid var(--card-border);
       color: var(--text-muted);
-      padding: 6px 14px;
-      border-radius: 4px;
-      font-size: 0.82rem;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s ease;
@@ -394,10 +394,10 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       color: var(--text-dark);
-      padding: 6px 10px;
-      border-radius: 4px;
+      padding: 5px 8px;
+      border-radius: 6px;
       font-family: inherit;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 600;
     }
 
@@ -405,36 +405,35 @@ app.get('/', async (req: Request, res: Response) => {
     .settings-grid {
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 1.25rem;
       max-width: 800px;
     }
 
     .settings-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      border-radius: 14px;
+      padding: 1.35rem;
     }
 
     .settings-title {
-      font-size: 1.1rem;
-      font-weight: 800;
+      font-size: 1.05rem;
+      font-weight: 700;
       letter-spacing: -0.02em;
       color: var(--text-dark);
-      margin-bottom: 0.35rem;
+      margin-bottom: 0.3rem;
     }
 
     .settings-desc {
-      font-size: 0.85rem;
+      font-size: 0.83rem;
       color: var(--text-muted);
-      margin-bottom: 1.1rem;
+      margin-bottom: 1rem;
     }
 
     .settings-form-group {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
     }
 
@@ -442,10 +441,10 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--subtle-bg);
       border: 1px solid var(--card-border);
       color: var(--text-dark);
-      padding: 9px 14px;
+      padding: 8px 12px;
       border-radius: 6px;
       font-family: inherit;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       font-weight: 600;
     }
 
@@ -458,10 +457,10 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--subtle-bg);
       border: 1px solid var(--card-border);
       color: var(--text-muted);
-      padding: 10px 20px;
+      padding: 8px 18px;
       border-radius: 6px;
-      font-size: 0.88rem;
-      font-weight: 700;
+      font-size: 0.85rem;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.2s ease;
     }
@@ -472,186 +471,182 @@ app.get('/', async (req: Request, res: Response) => {
       border-color: var(--theme-blue);
     }
 
-    /* Automated Insights Card */
+    /* Minimal Automated Insights Card */
     .insights-card {
       background: var(--badge-bg);
       border: 1px solid var(--badge-border);
-      border-radius: 12px;
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      border-radius: 14px;
+      padding: 1.15rem 1.35rem;
+      margin-bottom: 1.25rem;
     }
 
     .insights-header {
-      font-size: 0.85rem;
-      font-weight: 800;
+      font-size: 0.75rem;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--theme-blue);
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.35rem;
     }
 
     .insights-text {
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 500;
       color: var(--text-dark);
-      line-height: 1.6;
+      line-height: 1.55;
     }
 
-    /* Monthly Goal Progress Card */
+    /* Minimal Monthly Goal Progress Card */
     .goal-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      border-radius: 14px;
+      padding: 1.15rem 1.35rem;
+      margin-bottom: 1.25rem;
     }
 
     .goal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.65rem;
     }
 
     .goal-title {
-      font-size: 0.85rem;
-      font-weight: 800;
+      font-size: 0.75rem;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--text-muted);
     }
 
     .goal-stats {
-      font-size: 0.9rem;
-      font-weight: 800;
+      font-size: 0.85rem;
+      font-weight: 700;
       color: var(--theme-blue);
     }
 
     .progress-bar-bg {
       background: var(--subtle-bg);
-      height: 10px;
-      border-radius: 6px;
+      height: 8px;
+      border-radius: 4px;
       overflow: hidden;
-      margin-bottom: 0.6rem;
+      margin-bottom: 0.55rem;
     }
 
     .progress-bar-fill {
       background: var(--theme-blue);
       height: 100%;
-      border-radius: 6px;
+      border-radius: 4px;
       transition: width 0.4s ease;
     }
 
     .goal-footer {
       display: flex;
       justify-content: space-between;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       color: var(--text-muted);
       font-weight: 500;
     }
 
     /* Personal Records (PRs) Section */
     .prs-section {
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
     }
 
     .prs-title {
-      font-size: 1.05rem;
-      font-weight: 800;
+      font-size: 1rem;
+      font-weight: 700;
       letter-spacing: -0.02em;
       color: var(--text-dark);
-      margin-bottom: 0.85rem;
+      margin-bottom: 0.75rem;
     }
 
     .prs-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.85rem;
     }
 
     .pr-card {
-      background: var(--subtle-bg);
+      background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 1.1rem;
+      border-radius: 12px;
+      padding: 1rem;
     }
 
     .pr-label {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--text-muted);
-      margin-bottom: 0.3rem;
+      margin-bottom: 0.25rem;
     }
 
     .pr-value {
-      font-size: 1.45rem;
-      font-weight: 800;
+      font-size: 1.35rem;
+      font-weight: 700;
       letter-spacing: -0.02em;
       color: var(--theme-blue);
     }
 
     .pr-date {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       color: var(--text-dim);
-      margin-top: 0.3rem;
+      margin-top: 0.25rem;
     }
 
-    /* Metric Cards Grid */
+    /* Minimal Metric Cards Grid */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.85rem;
+      margin-bottom: 1.75rem;
     }
 
     .card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 1.2rem 1.1rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      padding: 1.1rem 1rem;
       transition: transform 0.15s ease, border-color 0.15s ease;
     }
 
     .card:hover {
       border-color: var(--theme-blue);
-      transform: translateY(-1px);
     }
 
     .card-title {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       font-weight: 700;
-      margin-bottom: 0.35rem;
+      margin-bottom: 0.3rem;
     }
 
     .card-value {
-      font-size: 1.85rem;
-      font-weight: 800;
+      font-size: 1.65rem;
+      font-weight: 700;
       letter-spacing: -0.03em;
       line-height: 1.1;
       color: var(--theme-blue) !important;
     }
 
     .card-subtitle {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 500;
       color: var(--text-dim);
-      margin-top: 0.35rem;
+      margin-top: 0.3rem;
     }
 
     /* Charts Grid Section */
     .charts-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
+      grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.75rem;
     }
 
     @media (max-width: 600px) {
@@ -663,23 +658,22 @@ app.get('/', async (req: Request, res: Response) => {
     .chart-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 1.4rem;
+      border-radius: 14px;
+      padding: 1.25rem;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
     .chart-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.2rem;
+      margin-bottom: 1rem;
     }
 
     .chart-title {
-      font-size: 1.05rem;
-      font-weight: 800;
+      font-size: 0.98rem;
+      font-weight: 700;
       letter-spacing: -0.02em;
       color: var(--text-dark);
     }
@@ -688,10 +682,10 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--subtle-bg);
       border: 1px solid var(--card-border);
       color: var(--text-dark);
-      padding: 5px 12px;
-      border-radius: 4px;
-      font-size: 0.78rem;
-      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.15s ease;
     }
@@ -705,18 +699,18 @@ app.get('/', async (req: Request, res: Response) => {
     .chart-body {
       position: relative;
       width: 100%;
-      height: 280px;
+      height: 270px;
     }
 
-    /* Zoom Modal Styles */
+    /* Zoom Fullscreen Modal Styles */
     .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(8px);
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(6px);
       z-index: 9999;
       display: flex;
       align-items: center;
@@ -740,10 +734,9 @@ app.get('/', async (req: Request, res: Response) => {
       max-width: 1100px;
       height: 85vh;
       max-height: 750px;
-      padding: 1.5rem;
+      padding: 1.25rem;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     }
 
     .modal-header {
@@ -751,15 +744,15 @@ app.get('/', async (req: Request, res: Response) => {
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.25rem;
-      gap: 12px;
-      padding-bottom: 1rem;
+      margin-bottom: 1rem;
+      gap: 10px;
+      padding-bottom: 0.85rem;
       border-bottom: 1px solid var(--card-border);
     }
 
     .modal-title {
-      font-size: 1.2rem;
-      font-weight: 800;
+      font-size: 1.1rem;
+      font-weight: 700;
       letter-spacing: -0.02em;
       color: var(--text-dark);
     }
@@ -767,17 +760,17 @@ app.get('/', async (req: Request, res: Response) => {
     .modal-controls {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .modal-btn {
       background: var(--subtle-bg);
       border: 1px solid var(--card-border);
       color: var(--text-dark);
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 0.82rem;
-      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.15s ease;
     }
@@ -809,12 +802,12 @@ app.get('/', async (req: Request, res: Response) => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1rem;
+      margin-bottom: 0.85rem;
     }
 
     .section-title {
-      font-size: 1.25rem;
-      font-weight: 800;
+      font-size: 1.15rem;
+      font-weight: 700;
       letter-spacing: -0.03em;
       color: var(--text-dark);
     }
@@ -822,11 +815,10 @@ app.get('/', async (req: Request, res: Response) => {
     .table-container {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 12px;
+      border-radius: 14px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       margin-bottom: 3rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
     table {
@@ -838,19 +830,19 @@ app.get('/', async (req: Request, res: Response) => {
 
     th {
       background: var(--subtle-bg);
-      padding: 0.9rem 1.25rem;
-      font-size: 0.78rem;
+      padding: 0.85rem 1.1rem;
+      font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      font-weight: 800;
+      font-weight: 700;
       color: var(--text-muted);
       border-bottom: 1px solid var(--card-border);
     }
 
     td {
-      padding: 0.95rem 1.25rem;
+      padding: 0.85rem 1.1rem;
       border-bottom: 1px solid var(--card-border);
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: 500;
       color: var(--text-dark);
     }
@@ -865,10 +857,10 @@ app.get('/', async (req: Request, res: Response) => {
 
     .badge {
       display: inline-block;
-      padding: 4px 10px;
+      padding: 3px 8px;
       border-radius: 4px;
-      font-size: 0.78rem;
-      font-weight: 700;
+      font-size: 0.75rem;
+      font-weight: 600;
       background: var(--badge-bg);
       color: var(--theme-blue);
       border: 1px solid var(--badge-border);
@@ -882,7 +874,7 @@ app.get('/', async (req: Request, res: Response) => {
   </style>
 </head>
 <body>
-  <!-- Strava-Style Top Header Navigation -->
+  <!-- Minimal Header Navigation -->
   <nav class="top-navbar">
     <div class="nav-container">
       <div class="nav-left">
@@ -917,13 +909,13 @@ app.get('/', async (req: Request, res: Response) => {
   <div class="main-container">
     <!-- TAB 1: OVERVIEW & RECORDS -->
     <div class="tab-content active" id="overviewTab">
-      <!-- 0. Upcoming Race Countdown Banner (Positioned Above Insights) -->
+      <!-- 0. Upcoming Race Countdown Banner -->
       <div class="race-card" id="raceCountdownWidget">
         <div class="race-header">Next Race Countdown</div>
         <div class="race-details-group" id="raceDetailsContent">
           <div>
             <div class="race-title" id="raceTitleText">No Upcoming Race Scheduled</div>
-            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;" id="raceSubtext">Set your next target race in the Settings tab.</div>
+            <div style="font-size: 0.83rem; color: var(--text-muted); margin-top: 2px;" id="raceSubtext">Set your next target race in the Settings tab.</div>
           </div>
           <div class="race-countdown-clock" id="raceClockGroup" style="display: none;">
             <div class="countdown-unit"><span class="countdown-num" id="cntDays">00</span><span class="countdown-lbl">Days</span></div>
@@ -1001,8 +993,8 @@ app.get('/', async (req: Request, res: Response) => {
       </div>
 
       <!-- 5. Summary Metrics Grid (Highlights) -->
-      <div class="section-header" style="margin-bottom: 0.8rem;">
-        <div class="section-title" style="font-size: 1.05rem;">Highlights & Summary</div>
+      <div class="section-header" style="margin-bottom: 0.75rem;">
+        <div class="section-title" style="font-size: 1rem;">Highlights & Summary</div>
       </div>
       <div class="grid">
         <div class="card">
@@ -1037,7 +1029,7 @@ app.get('/', async (req: Request, res: Response) => {
         </div>
         <div class="card">
           <div class="card-title">Avg / Max HR</div>
-          <div class="card-value" id="kpiAvgHr" style="font-size:1.45rem;">-</div>
+          <div class="card-value" id="kpiAvgHr" style="font-size:1.35rem;">-</div>
           <div class="card-subtitle">BPM</div>
         </div>
       </div>
@@ -1045,7 +1037,7 @@ app.get('/', async (req: Request, res: Response) => {
 
     <!-- TAB 2: ANALYTICS (GRAPHICAL VISUALS) -->
     <div class="tab-content" id="analyticsTab">
-      <!-- Synced Period Filter Bar (Top of Analytics Tab) -->
+      <!-- Synced Period Filter Bar -->
       <div class="filter-bar">
         <div class="filter-title">
           Select Period:
@@ -1112,7 +1104,7 @@ app.get('/', async (req: Request, res: Response) => {
 
     <!-- TAB 3: HISTORY (RUNNING PERFORMANCE HISTORY TABLE) -->
     <div class="tab-content" id="historyTab">
-      <!-- Synced Period Filter Bar (Top of History Tab) -->
+      <!-- Synced Period Filter Bar -->
       <div class="filter-bar">
         <div class="filter-title">
           Select Period:
@@ -1133,7 +1125,7 @@ app.get('/', async (req: Request, res: Response) => {
       <!-- Running Activities Table -->
       <div class="section-header">
         <div class="section-title">
-          Running Performance History <span id="periodLabel" style="font-size:0.85rem; font-weight:500; color:var(--text-muted)">(All Time)</span>
+          Running Performance History <span id="periodLabel" style="font-size:0.83rem; font-weight:500; color:var(--text-muted)">(All Time)</span>
         </div>
       </div>
 
@@ -1160,7 +1152,7 @@ app.get('/', async (req: Request, res: Response) => {
 
     <!-- TAB 4: SETTINGS -->
     <div class="tab-content" id="settingsTab">
-      <div class="section-header" style="margin-bottom: 1.25rem;">
+      <div class="section-header" style="margin-bottom: 1.15rem;">
         <div class="section-title">Application Settings</div>
       </div>
       
@@ -1169,17 +1161,17 @@ app.get('/', async (req: Request, res: Response) => {
         <div class="settings-card">
           <div class="settings-title">Next Upcoming Race</div>
           <div class="settings-desc">Set your next target race event details to display a live countdown on the Overview tab across all your devices.</div>
-          <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
             <div class="settings-form-group">
-              <label style="font-size: 0.85rem; font-weight: 700; width: 110px;">Race Name:</label>
+              <label style="font-size: 0.83rem; font-weight: 600; width: 110px;">Race Name:</label>
               <input type="text" id="raceNameInput" class="settings-input" style="width: 260px;" placeholder="e.g. Hyderabad Half Marathon" />
             </div>
             <div class="settings-form-group">
-              <label style="font-size: 0.85rem; font-weight: 700; width: 110px;">Race Date:</label>
+              <label style="font-size: 0.83rem; font-weight: 600; width: 110px;">Race Date:</label>
               <input type="date" id="raceDateInput" class="settings-input" style="width: 260px;" />
             </div>
             <div class="settings-form-group">
-              <label style="font-size: 0.85rem; font-weight: 700; width: 110px;">Distance (km):</label>
+              <label style="font-size: 0.83rem; font-weight: 600; width: 110px;">Distance (km):</label>
               <input type="number" id="raceDistInput" class="settings-input" style="width: 140px;" step="0.1" placeholder="e.g. 21.1" />
               <button onclick="saveUpcomingRaceSetting()" class="strava-btn strava-btn-primary" id="saveRaceBtn">Save Race</button>
             </div>
@@ -1192,7 +1184,7 @@ app.get('/', async (req: Request, res: Response) => {
           <div class="settings-desc">Set your target running mileage in kilometers for the current calendar month.</div>
           <div class="settings-form-group">
             <input type="number" id="monthlyGoalInput" class="settings-input" min="1" max="1000" step="5" value="100" />
-            <span style="font-weight:700; color:var(--text-muted)">km / month</span>
+            <span style="font-weight:600; color:var(--text-muted); font-size: 0.88rem;">km / month</span>
             <button onclick="saveMonthlyGoalSetting()" class="strava-btn strava-btn-primary" id="saveGoalBtn">Save Goal</button>
           </div>
         </div>
@@ -1796,7 +1788,7 @@ app.get('/', async (req: Request, res: Response) => {
 
     function renderCharts(runs) {
       const isDark = document.body.classList.contains('dark-mode');
-      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+      const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
 
       const chronoRuns = [...runs].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
@@ -1839,9 +1831,9 @@ app.get('/', async (req: Request, res: Response) => {
             {
               label: 'Distance (km)',
               data: distances,
-              backgroundColor: isDark ? 'rgba(0, 198, 255, 0.45)' : 'rgba(0, 128, 255, 0.45)',
-              borderColor: isDark ? '#00c6ff' : '#0080ff',
-              borderWidth: 2,
+              backgroundColor: isDark ? 'rgba(56, 189, 248, 0.35)' : 'rgba(2, 132, 199, 0.35)',
+              borderColor: isDark ? '#38bdf8' : '#0284c7',
+              borderWidth: 1.5,
               borderRadius: 4,
               yAxisID: 'yDist',
             },
@@ -1849,11 +1841,11 @@ app.get('/', async (req: Request, res: Response) => {
               label: 'Pace (min/km)',
               data: paces,
               type: 'line',
-              borderColor: isDark ? '#38bdf8' : '#00a3ff',
-              backgroundColor: isDark ? '#38bdf8' : '#00a3ff',
-              borderWidth: 3,
+              borderColor: isDark ? '#7dd3fc' : '#0369a1',
+              backgroundColor: isDark ? '#7dd3fc' : '#0369a1',
+              borderWidth: 2,
               tension: 0.3,
-              pointRadius: 4,
+              pointRadius: 3,
               yAxisID: 'yPace',
             }
           ]
@@ -1879,14 +1871,14 @@ app.get('/', async (req: Request, res: Response) => {
             yDist: {
               type: 'linear',
               position: 'left',
-              title: { display: true, text: 'Distance (km)', color: isDark ? '#00c6ff' : '#0080ff' },
+              title: { display: true, text: 'Distance (km)', color: isDark ? '#38bdf8' : '#0284c7' },
               grid: { color: gridColor }
             },
             yPace: {
               type: 'linear',
               position: 'right',
               reverse: true,
-              title: { display: true, text: 'Pace (min/km - Faster)', color: isDark ? '#38bdf8' : '#00a3ff' },
+              title: { display: true, text: 'Pace (min/km - Faster)', color: isDark ? '#7dd3fc' : '#0369a1' },
               grid: { drawOnChartArea: false },
               ticks: {
                 callback: function(val) { return formatPaceDecToString(val); }
@@ -1915,16 +1907,16 @@ app.get('/', async (req: Request, res: Response) => {
           labels: ['Zone 1 (Recovery)', 'Zone 2 (Aerobic Base)', 'Zone 3 (Tempo)', 'Zone 4 (Threshold)', 'Zone 5 (Anaerobic Peak)'],
           datasets: [{
             data: [z1, z2, z3, z4, z5],
-            backgroundColor: ['#94a3b8', '#38bdf8', '#0080ff', '#0052cc', '#fc4c02'],
+            backgroundColor: ['#94a3b8', '#38bdf8', '#0284c7', '#0369a1', '#f97316'],
             borderWidth: 0,
-            hoverOffset: 8
+            hoverOffset: 6
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'right', labels: { boxWidth: 14, font: { size: 11 } } },
+            legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
             tooltip: {
               callbacks: {
                 label: function(context) { return ' ' + context.label + ': ' + context.raw + ' mins'; }
@@ -1945,9 +1937,9 @@ app.get('/', async (req: Request, res: Response) => {
             {
               label: 'WHOOP Strain (0-21)',
               data: strains,
-              borderColor: isDark ? '#00c6ff' : '#0080ff',
-              backgroundColor: isDark ? 'rgba(0, 198, 255, 0.1)' : 'rgba(0, 128, 255, 0.08)',
-              borderWidth: 3,
+              borderColor: isDark ? '#38bdf8' : '#0284c7',
+              backgroundColor: isDark ? 'rgba(56, 189, 248, 0.08)' : 'rgba(2, 132, 199, 0.06)',
+              borderWidth: 2,
               tension: 0.3,
               fill: true,
               yAxisID: 'yStrain'
@@ -1955,10 +1947,10 @@ app.get('/', async (req: Request, res: Response) => {
             {
               label: 'Avg Heart Rate (BPM)',
               data: avgHrs,
-              borderColor: isDark ? '#38bdf8' : '#00a3ff',
-              borderWidth: 2.5,
+              borderColor: isDark ? '#7dd3fc' : '#0369a1',
+              borderWidth: 2,
               tension: 0.3,
-              pointRadius: 4,
+              pointRadius: 3,
               yAxisID: 'yHr'
             }
           ]
@@ -1974,13 +1966,13 @@ app.get('/', async (req: Request, res: Response) => {
               position: 'left',
               min: 0,
               max: 21,
-              title: { display: true, text: 'Strain (0-21)', color: isDark ? '#00c6ff' : '#0080ff' },
+              title: { display: true, text: 'Strain (0-21)', color: isDark ? '#38bdf8' : '#0284c7' },
               grid: { color: gridColor }
             },
             yHr: {
               type: 'linear',
               position: 'right',
-              title: { display: true, text: 'Avg Heart Rate (BPM)', color: isDark ? '#38bdf8' : '#00a3ff' },
+              title: { display: true, text: 'Avg Heart Rate (BPM)', color: isDark ? '#7dd3fc' : '#0369a1' },
               grid: { drawOnChartArea: false }
             }
           }
@@ -2012,9 +2004,9 @@ app.get('/', async (req: Request, res: Response) => {
           datasets: [{
             label: 'Total Distance (km)',
             data: weekDistances,
-            backgroundColor: isDark ? 'rgba(56, 189, 248, 0.45)' : 'rgba(0, 163, 255, 0.45)',
-            borderColor: isDark ? '#38bdf8' : '#00a3ff',
-            borderWidth: 2,
+            backgroundColor: isDark ? 'rgba(56, 189, 248, 0.35)' : 'rgba(2, 132, 199, 0.35)',
+            borderColor: isDark ? '#38bdf8' : '#0284c7',
+            borderWidth: 1.5,
             borderRadius: 4
           }]
         },
@@ -2032,7 +2024,7 @@ app.get('/', async (req: Request, res: Response) => {
           scales: {
             x: { grid: { color: gridColor } },
             y: {
-              title: { display: true, text: 'Weekly Distance (km)', color: isDark ? '#38bdf8' : '#00a3ff' },
+              title: { display: true, text: 'Weekly Distance (km)', color: isDark ? '#38bdf8' : '#0284c7' },
               grid: { color: gridColor }
             }
           }
