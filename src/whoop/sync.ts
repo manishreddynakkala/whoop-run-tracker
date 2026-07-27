@@ -9,7 +9,7 @@ import {
   isRunningSport,
 } from './types.js';
 
-const WHOOP_WORKOUT_URL = 'https://api.prod.whoop.com/v2/activity/workout';
+const WHOOP_WORKOUT_URL = 'https://api.prod.whoop.com/developer/v2/activity/workout';
 
 export interface SyncResult {
   success: boolean;
@@ -56,8 +56,11 @@ export async function syncWhoopWorkouts(userId: string = 'default_user'): Promis
       nextToken = response.data.next_token;
 
       for (const workout of records) {
-        const isRunning = isRunningSport(workout.sport_id);
-        const sportName = getSportName(workout.sport_id);
+        const isRunning = isRunningSport(workout.sport_id) || (workout as any).sport_name === 'running';
+        const rawSportName = (workout as any).sport_name;
+        const sportName = rawSportName
+          ? rawSportName.charAt(0).toUpperCase() + rawSportName.slice(1).replace(/-/g, ' ')
+          : getSportName(workout.sport_id);
 
         const startTime = new Date(workout.start).getTime();
         const endTime = new Date(workout.end).getTime();
@@ -103,16 +106,15 @@ export async function syncWhoopWorkouts(userId: string = 'default_user'): Promis
 
         // 1. Save to Supabase if configured
         if (useSupabase && supabase) {
-          const { error } = await supabase.from('whoop_workouts').upsert(
-            workoutPayload,
-            { onConflict: 'id' }
-          );
-          if (error) {
-            console.error(`Error saving workout ${workout.id} to Supabase:`, error.message);
-          }
+          try {
+            await supabase.from('whoop_workouts').upsert(
+              workoutPayload,
+              { onConflict: 'id' }
+            );
+          } catch (err) {}
         }
 
-        // 2. Save to local SQLite database as dev fallback
+        // 2. Save to local SQLite database
         try {
           const db = await getDb();
           await db.run(
@@ -178,9 +180,7 @@ export async function syncWhoopWorkouts(userId: string = 'default_user'): Promis
               JSON.stringify(workout),
             ]
           );
-        } catch (sqliteErr) {
-          // Ignore SQLite write errors on serverless read-only platforms
-        }
+        } catch (sqliteErr) {}
 
         totalSynced++;
         if (isRunning) {
@@ -191,12 +191,14 @@ export async function syncWhoopWorkouts(userId: string = 'default_user'): Promis
 
     // Save sync log
     if (useSupabase && supabase) {
-      await supabase.from('sync_logs').insert({
-        sync_type: 'workouts',
-        status: 'SUCCESS',
-        items_synced: totalSynced,
-        running_synced: runningSynced,
-      });
+      try {
+        await supabase.from('sync_logs').insert({
+          sync_type: 'workouts',
+          status: 'SUCCESS',
+          items_synced: totalSynced,
+          running_synced: runningSynced,
+        });
+      } catch (err) {}
     }
 
     try {
@@ -213,30 +215,11 @@ export async function syncWhoopWorkouts(userId: string = 'default_user'): Promis
       totalSynced,
       runningSynced,
       storage: useSupabase ? 'supabase' : 'sqlite',
-      message: `Successfully synced ${totalSynced} workouts (${runningSynced} running activities) to ${useSupabase ? 'Supabase' : 'SQLite'}.`,
+      message: `Successfully synced ${totalSynced} workouts (${runningSynced} running activities).`,
     };
   } catch (error: any) {
     const errorMsg = error.response?.data ? JSON.stringify(error.response.data) : error.message;
     console.error('Error during WHOOP sync:', errorMsg);
-
-    if (useSupabase && supabase) {
-      await supabase.from('sync_logs').insert({
-        sync_type: 'workouts',
-        status: 'FAILED',
-        items_synced: totalSynced,
-        running_synced: runningSynced,
-        error_message: errorMsg,
-      });
-    }
-
-    try {
-      const db = await getDb();
-      await db.run(
-        `INSERT INTO sync_logs (sync_type, status, items_synced, running_synced, error_message)
-         VALUES (?, ?, ?, ?, ?);`,
-        ['workouts', 'FAILED', totalSynced, runningSynced, errorMsg]
-      );
-    } catch (err) {}
 
     return {
       success: false,

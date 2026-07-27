@@ -26,49 +26,19 @@ app.get('/', async (req: Request, res: Response) => {
   const supabase = getSupabaseClient();
 
   let token: any = null;
-  let runsCount = 0;
-  let totalWorkouts = 0;
-  let runs: any[] = [];
   let dbType = useSupabase ? 'Supabase Postgres' : 'Local SQLite';
 
   if (useSupabase && supabase) {
     const tokenRes = await supabase.from('whoop_tokens').select('*').maybeSingle();
     token = tokenRes.data;
-
-    const runsCountRes = await supabase
-      .from('whoop_workouts')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_running', true);
-    runsCount = runsCountRes.count || 0;
-
-    const totalCountRes = await supabase
-      .from('whoop_workouts')
-      .select('*', { count: 'exact', head: true });
-    totalWorkouts = totalCountRes.count || 0;
-
-    const runsRes = await supabase
-      .from('whoop_workouts')
-      .select('*')
-      .eq('is_running', true)
-      .order('start_time', { ascending: false })
-      .limit(15);
-    runs = runsRes.data || [];
   } else {
     try {
       const db = await getDb();
       token = await db.get('SELECT * FROM whoop_tokens LIMIT 1');
-      const rCount = await db.get('SELECT COUNT(*) as count FROM whoop_workouts WHERE is_running = 1');
-      runsCount = rCount?.count || 0;
-      const tCount = await db.get('SELECT COUNT(*) as count FROM whoop_workouts');
-      totalWorkouts = tCount?.count || 0;
-      runs = await db.all('SELECT * FROM whoop_workouts WHERE is_running = 1 ORDER BY start_time DESC LIMIT 15');
-    } catch (err) {
-      // Fallback
-    }
+    } catch (err) {}
   }
 
   const hasTokenRecord = !!token;
-  const currentRedirectUri = getRedirectUri(req);
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -106,7 +76,7 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .container {
-      max-width: 1000px;
+      max-width: 1080px;
       margin: 0 auto;
     }
 
@@ -149,12 +119,6 @@ app.get('/', async (req: Request, res: Response) => {
       -webkit-text-fill-color: transparent;
     }
 
-    .status-group {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
     .status-pill {
       display: inline-flex;
       align-items: center;
@@ -176,11 +140,80 @@ app.get('/', async (req: Request, res: Response) => {
     .status-connected { background-color: var(--accent-green); box-shadow: 0 0 10px var(--accent-green); }
     .status-disconnected { background-color: var(--accent-red); box-shadow: 0 0 10px var(--accent-red); }
 
+    /* Date Period Filter Bar */
+    .filter-bar {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .filter-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .preset-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .preset-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .preset-btn:hover, .preset-btn.active {
+      background: linear-gradient(135deg, var(--accent-red), var(--accent-orange));
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 2px 10px rgba(255, 59, 92, 0.3);
+    }
+
+    .date-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .date-inputs input[type="date"] {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.82rem;
+    }
+
+    /* Summary Cards Grid */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1.25rem;
-      margin-bottom: 2rem;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
     }
 
     .card {
@@ -188,34 +221,34 @@ app.get('/', async (req: Request, res: Response) => {
       backdrop-filter: blur(12px);
       border: 1px solid var(--card-border);
       border-radius: 16px;
-      padding: 1.25rem;
+      padding: 1.1rem;
+      transition: transform 0.2s ease;
     }
 
     .card-title {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 0.4rem;
+      letter-spacing: 0.8px;
+      margin-bottom: 0.3rem;
     }
 
     .card-value {
-      font-size: 2.2rem;
+      font-size: 1.8rem;
       font-weight: 800;
-      letter-spacing: -1px;
+      letter-spacing: -0.8px;
     }
 
     .card-subtitle {
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       color: var(--text-muted);
-      margin-top: 0.4rem;
+      margin-top: 0.3rem;
     }
 
-    .actions-card {
+    .header-actions {
       display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      justify-content: center;
+      gap: 10px;
+      align-items: center;
     }
 
     .btn {
@@ -223,15 +256,14 @@ app.get('/', async (req: Request, res: Response) => {
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 12px 18px;
+      padding: 8px 14px;
       border-radius: 10px;
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       cursor: pointer;
       text-decoration: none;
       transition: all 0.2s ease;
       border: none;
-      width: 100%;
     }
 
     .btn-primary {
@@ -246,13 +278,19 @@ app.get('/', async (req: Request, res: Response) => {
       border: 1px solid var(--card-border);
     }
 
-    .section-title {
-      font-size: 1.2rem;
-      font-weight: 700;
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .table-container {
@@ -266,14 +304,14 @@ app.get('/', async (req: Request, res: Response) => {
 
     table {
       width: 100%;
-      min-width: 600px;
+      min-width: 680px;
       border-collapse: collapse;
       text-align: left;
     }
 
     th {
       background: rgba(255, 255, 255, 0.03);
-      padding: 0.9rem 1rem;
+      padding: 0.85rem 1rem;
       font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -282,9 +320,9 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     td {
-      padding: 0.9rem 1rem;
+      padding: 0.85rem 1rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      font-size: 0.9rem;
+      font-size: 0.88rem;
     }
 
     .badge {
@@ -306,23 +344,6 @@ app.get('/', async (req: Request, res: Response) => {
       color: var(--accent-orange);
       border: 1px solid rgba(255, 126, 54, 0.3);
     }
-
-    .alert {
-      background: rgba(255, 126, 54, 0.1);
-      border: 1px solid rgba(255, 126, 54, 0.3);
-      border-radius: 12px;
-      padding: 1rem 1.25rem;
-      margin-bottom: 1.5rem;
-      font-size: 0.88rem;
-      line-height: 1.5;
-    }
-
-    .alert code {
-      background: rgba(0, 0, 0, 0.4);
-      padding: 2px 6px;
-      border-radius: 4px;
-      color: var(--accent-cyan);
-    }
   </style>
 </head>
 <body>
@@ -335,45 +356,72 @@ app.get('/', async (req: Request, res: Response) => {
           <div style="font-size:0.78rem; color: var(--text-muted)">Powered by ${dbType}</div>
         </div>
       </div>
-      <div class="status-group">
+      <div class="header-actions">
         <div class="status-pill">
           <div class="status-dot ${hasTokenRecord ? 'status-connected' : 'status-disconnected'}"></div>
           ${hasTokenRecord ? 'Authenticated' : 'Not Connected'}
         </div>
+        <a href="/auth/login" class="btn btn-secondary">
+          ${hasTokenRecord ? '🔑 Re-auth' : '🔗 Connect'}
+        </a>
+        <button onclick="triggerSync()" class="btn btn-primary" id="syncBtn">
+          ⚡ Sync Data
+        </button>
       </div>
     </header>
 
-    ${
-      !useSupabase
-        ? `<div class="alert">
-            <strong>ℹ️ Supabase Setup Tip:</strong> To persist data permanently across Vercel deployments, add your <code>SUPABASE_URL</code> and <code>SUPABASE_KEY</code> to your Vercel Environment Variables.
-           </div>`
-        : ''
-    }
-
-    <div class="grid">
-      <div class="card">
-        <div class="card-title">Running Activities</div>
-        <div class="card-value" style="color: var(--accent-red)">${runsCount}</div>
-        <div class="card-subtitle">Stored in ${dbType}</div>
+    <!-- Date Period Filter Controls -->
+    <div class="filter-bar">
+      <div class="filter-title">
+        📅 Select Date Period:
       </div>
-      <div class="card">
-        <div class="card-title">Total Workouts</div>
-        <div class="card-value" style="color: var(--accent-cyan)">${totalWorkouts}</div>
-        <div class="card-subtitle">All WHOOP activities ingested</div>
+      <div class="preset-group">
+        <button class="preset-btn" onclick="selectPreset('7d', this)">Last 7 Days</button>
+        <button class="preset-btn" onclick="selectPreset('30d', this)">Last 30 Days</button>
+        <button class="preset-btn" onclick="selectPreset('month', this)">This Month</button>
+        <button class="preset-btn active" onclick="selectPreset('all', this)">All Time</button>
       </div>
-      <div class="card actions-card">
-        <a href="/auth/login" class="btn btn-primary">
-          ${hasTokenRecord ? '🔑 Re-authenticate WHOOP' : '🔗 Connect WHOOP Account'}
-        </a>
-        <button onclick="triggerSync()" class="btn btn-secondary" id="syncBtn">
-          ⚡ Trigger Ingestion Sync
-        </button>
+      <div class="date-inputs">
+        <input type="date" id="startDate" onchange="customDateChanged()" />
+        <span style="font-size:0.8rem; color:var(--text-muted)">to</span>
+        <input type="date" id="endDate" onchange="customDateChanged()" />
       </div>
     </div>
 
-    <div class="section-title">
-      🏃 Recent Running Activities
+    <!-- Summary Metrics for Selected Period -->
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">Running Sessions</div>
+        <div class="card-value" id="kpiRunsCount" style="color: var(--accent-cyan)">-</div>
+        <div class="card-subtitle">Completed runs</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Total Distance</div>
+        <div class="card-value" id="kpiDistance" style="color: var(--accent-red)">-</div>
+        <div class="card-subtitle">Kilometers run</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Total Time</div>
+        <div class="card-value" id="kpiDuration" style="color: #a78bfa">-</div>
+        <div class="card-subtitle">Hours & Mins</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Average Strain</div>
+        <div class="card-value" id="kpiAvgStrain" style="color: var(--accent-orange)">-</div>
+        <div class="card-subtitle">WHOOP strain score</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Avg / Max Heart Rate</div>
+        <div class="card-value" id="kpiAvgHr" style="font-size:1.5rem; color:var(--accent-green)">-</div>
+        <div class="card-subtitle">BPM average</div>
+      </div>
+    </div>
+
+    <!-- Running Activities Table -->
+    <div class="section-header">
+      <div class="section-title">
+        🏃 Running Activities <span id="periodLabel" style="font-size:0.85rem; font-weight:400; color:var(--text-muted)">(All Time)</span>
+      </div>
     </div>
 
     <div class="table-container">
@@ -382,45 +430,156 @@ app.get('/', async (req: Request, res: Response) => {
           <tr>
             <th>Date & Time</th>
             <th>Sport</th>
-            <th>Distance</th>
+            <th>Distance (km)</th>
             <th>Duration</th>
             <th>Strain</th>
             <th>Avg / Max HR</th>
             <th>Calories</th>
           </tr>
         </thead>
-        <tbody>
-          ${
-            runs.length === 0
-              ? `<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-muted)">No running activities ingested yet. Connect your account and run a sync!</td></tr>`
-              : runs
-                  .map((r: any) => {
-                    const dateStr = new Date(r.start_time).toLocaleString([], {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    });
-                    const durationMin = Math.round(r.duration_ms / 60000);
-                    const distMiles = r.distance_miles ? `${Number(r.distance_miles).toFixed(2)} mi` : 'N/A';
-                    return `
-                      <tr>
-                        <td><strong>${dateStr}</strong></td>
-                        <td>${r.sport_name}</td>
-                        <td><strong style="color:var(--accent-cyan)">${distMiles}</strong></td>
-                        <td>${durationMin} mins</td>
-                        <td><span class="badge badge-strain">${r.strain ? Number(r.strain).toFixed(1) : 'N/A'}</span></td>
-                        <td><span class="badge badge-hr">${r.average_heart_rate || 'N/A'} / ${r.max_heart_rate || 'N/A'} bpm</span></td>
-                        <td>${r.calories ? Math.round(Number(r.calories)) + ' kcal' : 'N/A'}</td>
-                      </tr>
-                    `;
-                  })
-                  .join('')
-          }
+        <tbody id="runsTableBody">
+          <tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-muted)">Loading running activities...</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
   <script>
+    let currentStartDate = null;
+    let currentEndDate = null;
+
+    async function loadRuns() {
+      const tbody = document.getElementById('runsTableBody');
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-muted)">Loading...</td></tr>';
+
+      const params = new URLSearchParams();
+      if (currentStartDate) params.append('startDate', currentStartDate);
+      if (currentEndDate) params.append('endDate', currentEndDate);
+
+      try {
+        const res = await fetch('/api/runs?' + params.toString());
+        const data = await res.json();
+        const runs = data.runs || [];
+
+        // Update KPI Cards using Kilometers (km)
+        let totalDistKm = 0;
+        let totalDurationMs = 0;
+        let totalStrain = 0;
+        let strainCount = 0;
+        let totalAvgHr = 0;
+        let hrCount = 0;
+        let maxHrReached = 0;
+
+        runs.forEach(r => {
+          if (r.distance_km) totalDistKm += Number(r.distance_km);
+          else if (r.distance_meters) totalDistKm += Number(r.distance_meters) / 1000;
+
+          if (r.duration_ms) totalDurationMs += Number(r.duration_ms);
+          if (r.strain) { totalStrain += Number(r.strain); strainCount++; }
+          if (r.average_heart_rate) { totalAvgHr += Number(r.average_heart_rate); hrCount++; }
+          if (r.max_heart_rate && Number(r.max_heart_rate) > maxHrReached) {
+            maxHrReached = Number(r.max_heart_rate);
+          }
+        });
+
+        document.getElementById('kpiRunsCount').innerText = runs.length;
+        document.getElementById('kpiDistance').innerText = totalDistKm > 0 ? totalDistKm.toFixed(2) + ' km' : '0 km';
+
+        const totalMins = Math.round(totalDurationMs / 60000);
+        const hours = Math.floor(totalMins / 60);
+        const mins = totalMins % 60;
+        document.getElementById('kpiDuration').innerText = hours > 0 ? \`\${hours}h \${mins}m\` : \`\${mins}m\`;
+
+        document.getElementById('kpiAvgStrain').innerText = strainCount > 0 ? (totalStrain / strainCount).toFixed(1) : 'N/A';
+        
+        const avgHrVal = hrCount > 0 ? Math.round(totalAvgHr / hrCount) : null;
+        document.getElementById('kpiAvgHr').innerText = avgHrVal ? \`\${avgHrVal} / \${maxHrReached} bpm\` : 'N/A';
+
+        // Render Table Rows
+        if (runs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-muted)">No running activities found for the selected date period.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = runs.map(r => {
+          const dateStr = new Date(r.start_time).toLocaleString([], {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          });
+          const durationMin = Math.round(r.duration_ms / 60000);
+          
+          let distKmStr = 'N/A';
+          if (r.distance_km) {
+            distKmStr = Number(r.distance_km).toFixed(2) + ' km';
+          } else if (r.distance_meters) {
+            distKmStr = (Number(r.distance_meters) / 1000).toFixed(2) + ' km';
+          }
+
+          return \`
+            <tr>
+              <td><strong>\${dateStr}</strong></td>
+              <td>\${r.sport_name}</td>
+              <td><strong style="color:var(--accent-cyan)">\${distKmStr}</strong></td>
+              <td>\${durationMin} mins</td>
+              <td><span class="badge badge-strain">\${r.strain ? Number(r.strain).toFixed(1) : 'N/A'}</span></td>
+              <td><span class="badge badge-hr">\${r.average_heart_rate || 'N/A'} / \${r.max_heart_rate || 'N/A'} bpm</span></td>
+              <td>\${r.calories ? Math.round(Number(r.calories)) + ' kcal' : 'N/A'}</td>
+            </tr>
+          \`;
+        }).join('');
+
+      } catch (err) {
+        tbody.innerHTML = \`<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--accent-red)">Error loading data: \${err.message}</td></tr>\`;
+      }
+    }
+
+    function selectPreset(type, btnEl) {
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      document.getElementById('endDate').value = todayStr;
+
+      if (type === '7d') {
+        const d = new Date();
+        d.setDate(now.getDate() - 7);
+        currentStartDate = d.toISOString().split('T')[0];
+        currentEndDate = todayStr;
+        document.getElementById('startDate').value = currentStartDate;
+        document.getElementById('periodLabel').innerText = '(Last 7 Days)';
+      } else if (type === '30d') {
+        const d = new Date();
+        d.setDate(now.getDate() - 30);
+        currentStartDate = d.toISOString().split('T')[0];
+        currentEndDate = todayStr;
+        document.getElementById('startDate').value = currentStartDate;
+        document.getElementById('periodLabel').innerText = '(Last 30 Days)';
+      } else if (type === 'month') {
+        const d = new Date(now.getFullYear(), now.getMonth(), 1);
+        currentStartDate = d.toISOString().split('T')[0];
+        currentEndDate = todayStr;
+        document.getElementById('startDate').value = currentStartDate;
+        document.getElementById('periodLabel').innerText = '(This Month)';
+      } else if (type === 'all') {
+        currentStartDate = null;
+        currentEndDate = null;
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        document.getElementById('periodLabel').innerText = '(All Time)';
+      }
+
+      loadRuns();
+    }
+
+    function customDateChanged() {
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      currentStartDate = document.getElementById('startDate').value || null;
+      currentEndDate = document.getElementById('endDate').value || null;
+      document.getElementById('periodLabel').innerText = currentStartDate || currentEndDate ? '(Custom Period)' : '(All Time)';
+      loadRuns();
+    }
+
     async function triggerSync() {
       const btn = document.getElementById('syncBtn');
       btn.innerText = '⌛ Syncing...';
@@ -430,14 +589,17 @@ app.get('/', async (req: Request, res: Response) => {
         const res = await fetch('/api/sync', { method: 'POST' });
         const data = await res.json();
         alert(data.message || (data.success ? 'Sync completed successfully!' : 'Sync failed'));
-        window.location.reload();
+        loadRuns();
       } catch (err) {
         alert('Error triggering sync: ' + err.message);
       } finally {
-        btn.innerText = '⚡ Trigger Ingestion Sync';
+        btn.innerText = '⚡ Sync Data';
         btn.disabled = false;
       }
     }
+
+    // Initial load
+    loadRuns();
   </script>
 </body>
 </html>`;
@@ -481,23 +643,50 @@ app.post('/api/sync', async (req: Request, res: Response) => {
   res.json(result);
 });
 
-// JSON endpoint for stored runs
+// Filterable JSON endpoint for stored runs
 app.get('/api/runs', async (req: Request, res: Response) => {
+  const { startDate, endDate } = req.query;
   const useSupabase = isSupabaseConfigured();
   const supabase = getSupabaseClient();
 
   if (useSupabase && supabase) {
-    const { data, error } = await supabase
+    let query = supabase
       .from('whoop_workouts')
       .select('*')
       .eq('is_running', true)
       .order('start_time', { ascending: false });
+
+    if (startDate) {
+      query = query.gte('start_time', new Date(startDate as string).toISOString());
+    }
+    if (endDate) {
+      const endD = new Date(endDate as string);
+      endD.setHours(23, 59, 59, 999);
+      query = query.lte('start_time', endD.toISOString());
+    }
+
+    const { data, error } = await query;
     return res.json({ count: data?.length || 0, runs: data || [], error: error?.message });
   }
 
   try {
     const db = await getDb();
-    const runs = await db.all('SELECT * FROM whoop_workouts WHERE is_running = 1 ORDER BY start_time DESC');
+    let sql = 'SELECT * FROM whoop_workouts WHERE is_running = 1';
+    const params: any[] = [];
+
+    if (startDate) {
+      sql += ' AND start_time >= ?';
+      params.push(new Date(startDate as string).toISOString());
+    }
+    if (endDate) {
+      const endD = new Date(endDate as string);
+      endD.setHours(23, 59, 59, 999);
+      sql += ' AND start_time <= ?';
+      params.push(endD.toISOString());
+    }
+
+    sql += ' ORDER BY start_time DESC';
+    const runs = await db.all(sql, params);
     res.json({ count: runs.length, runs });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -555,10 +744,8 @@ app.get('/api/status', async (req: Request, res: Response) => {
   });
 });
 
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`🌐 WHOOP Run Tracker Hub running on http://localhost:${PORT}`);
-  });
-}
+app.listen(PORT, () => {
+  console.log(`🌐 WHOOP Run Tracker Hub running on http://localhost:${PORT}`);
+});
 
 export default app;

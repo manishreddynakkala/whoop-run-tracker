@@ -21,7 +21,7 @@ export function getAuthorizationUrl(state: string = 'whoop_state', redirectUriOv
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: 'code',
-    scope: 'read:workout read:recovery read:cycles read:profile',
+    scope: 'offline read:workout read:recovery read:cycles read:profile',
     state,
   });
 
@@ -72,7 +72,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<WhoopTok
     client_secret: clientSecret,
     grant_type: 'refresh_token',
     refresh_token: refreshToken,
-    scope: 'read:workout read:recovery read:cycles read:profile',
+    scope: 'offline read:workout read:recovery read:cycles read:profile',
   });
 
   const response = await axios.post<WhoopTokenResponse>(
@@ -90,29 +90,34 @@ export async function refreshAccessToken(refreshToken: string): Promise<WhoopTok
 }
 
 export async function saveTokenToDb(tokenData: WhoopTokenResponse, userId: string = 'default_user') {
-  const expiresAt = Date.now() + tokenData.expires_in * 1000;
+  const expiresAt = Date.now() + (tokenData.expires_in || 3600) * 1000;
+  const refreshToken = tokenData.refresh_token || 'no_refresh_token_provided';
 
   if (isSupabaseConfigured()) {
-    const supabase = getSupabaseClient()!;
-    const { error } = await supabase.from('whoop_tokens').upsert(
-      {
-        user_id: userId,
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
-        expires_at: expiresAt,
-        token_type: tokenData.token_type || 'bearer',
-        scope: tokenData.scope || '',
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id' }
-    );
+    try {
+      const supabase = getSupabaseClient()!;
+      const { error } = await supabase.from('whoop_tokens').upsert(
+        {
+          user_id: userId,
+          access_token: tokenData.access_token,
+          refresh_token: refreshToken,
+          expires_at: expiresAt,
+          token_type: tokenData.token_type || 'bearer',
+          scope: tokenData.scope || '',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      );
 
-    if (error) {
-      console.error('Error saving WHOOP token to Supabase:', error.message);
+      if (error) {
+        console.error('Error saving WHOOP token to Supabase:', error.message);
+      }
+    } catch (supabaseErr: any) {
+      console.warn('Supabase save error (falling back to SQLite):', supabaseErr.message);
     }
   }
 
-  // Also save to SQLite local DB as fallback/dev cache
+  // Save to SQLite local DB
   try {
     const db = await getDb();
     await db.run(
@@ -128,14 +133,14 @@ export async function saveTokenToDb(tokenData: WhoopTokenResponse, userId: strin
       [
         userId,
         tokenData.access_token,
-        tokenData.refresh_token,
+        refreshToken,
         expiresAt,
         tokenData.token_type || 'bearer',
         tokenData.scope || '',
       ]
     );
-  } catch (err) {
-    // Ignore SQLite file write errors on read-only serverless platforms like Vercel
+  } catch (err: any) {
+    console.error('Error saving WHOOP token to SQLite:', err.message);
   }
 }
 
@@ -143,23 +148,25 @@ export async function getValidAccessToken(userId: string = 'default_user'): Prom
   let record: { access_token: string; refresh_token: string; expires_at: number } | null = null;
 
   if (isSupabaseConfigured()) {
-    const supabase = getSupabaseClient()!;
-    const { data, error } = await supabase
-      .from('whoop_tokens')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
+    try {
+      const supabase = getSupabaseClient()!;
+      const { data, error } = await supabase
+        .from('whoop_tokens')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-    if (!error && data) {
-      record = {
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-        expires_at: Number(data.expires_at),
-      };
-    }
+      if (!error && data) {
+        record = {
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          expires_at: Number(data.expires_at),
+        };
+      }
+    } catch (err) {}
   }
 
-  // Fallback to SQLite if Supabase didn't return a record
+  // Fallback to SQLite
   if (!record) {
     try {
       const db = await getDb();
@@ -171,9 +178,7 @@ export async function getValidAccessToken(userId: string = 'default_user'): Prom
           expires_at: row.expires_at,
         };
       }
-    } catch (err) {
-      // Ignore SQLite errors on serverless
-    }
+    } catch (err) {}
   }
 
   if (!record) {
@@ -183,13 +188,13 @@ export async function getValidAccessToken(userId: string = 'default_user'): Prom
   // Check if token is expired (or expires within 5 minutes)
   const isExpired = Date.now() + 5 * 60 * 1000 >= record.expires_at;
 
-  if (isExpired) {
+  if (isExpired && record.refresh_token && record.refresh_token !== 'no_refresh_token_provided') {
     try {
       const newTokenData = await refreshAccessToken(record.refresh_token);
       return newTokenData.access_token;
     } catch (error) {
       console.error('Failed to refresh WHOOP token:', error);
-      return null;
+      return record.access_token;
     }
   }
 
