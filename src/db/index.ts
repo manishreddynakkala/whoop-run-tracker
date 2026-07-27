@@ -117,4 +117,17 @@ async function initSchema(db: any) {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // User Settings table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS user_settings (
+      id TEXT PRIMARY KEY DEFAULT 'default',
+      monthly_target_km REAL DEFAULT 100,
+      race_name TEXT,
+      race_date TEXT,
+      race_distance REAL,
+      theme TEXT DEFAULT 'light',
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
 }

@@ -1168,7 +1168,7 @@ app.get('/', async (req: Request, res: Response) => {
         <!-- 1. Upcoming Target Race Settings Card -->
         <div class="settings-card">
           <div class="settings-title">Next Upcoming Race</div>
-          <div class="settings-desc">Set your next target race event details to display a live countdown on the Overview tab.</div>
+          <div class="settings-desc">Set your next target race event details to display a live countdown on the Overview tab across all your devices.</div>
           <div style="display: flex; flex-direction: column; gap: 12px;">
             <div class="settings-form-group">
               <label style="font-size: 0.85rem; font-weight: 700; width: 110px;">Race Name:</label>
@@ -1247,14 +1247,16 @@ app.get('/', async (req: Request, res: Response) => {
     let monthlyTargetKmSetting = 100;
     let upcomingRaceSetting = null;
     let raceCountdownTimer = null;
+    let currentThemeSetting = 'light';
     let chartInstanceDistancePace = null;
     let chartInstanceHrZones = null;
     let chartInstanceStrainHr = null;
     let chartInstanceWeeklyMileage = null;
     let modalChartInstance = null;
 
-    // Load Settings from Local Storage
-    function initSettings() {
+    // Load Settings from Server Database (Cross-Device Synced)
+    async function initSettings() {
+      // Load fallback from localStorage first
       const savedGoal = localStorage.getItem('monthlyTargetKm');
       if (savedGoal && !isNaN(Number(savedGoal))) {
         monthlyTargetKmSetting = Number(savedGoal);
@@ -1272,11 +1274,66 @@ app.get('/', async (req: Request, res: Response) => {
       }
 
       const savedTheme = localStorage.getItem('theme');
-      setThemeMode(savedTheme === 'dark' ? 'dark' : 'light', false);
+      if (savedTheme) {
+        currentThemeSetting = savedTheme;
+        setThemeMode(savedTheme, false);
+      }
       updateRaceCountdownWidget();
+
+      // Fetch authoritative settings from DB API across all devices
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.monthlyTargetKm) {
+            monthlyTargetKmSetting = Number(data.monthlyTargetKm);
+            document.getElementById('monthlyGoalInput').value = monthlyTargetKmSetting;
+            localStorage.setItem('monthlyTargetKm', monthlyTargetKmSetting);
+          }
+          if (data.raceName || data.raceDate) {
+            upcomingRaceSetting = {
+              name: data.raceName || '',
+              date: data.raceDate || '',
+              distance: data.raceDistance || ''
+            };
+            document.getElementById('raceNameInput').value = upcomingRaceSetting.name;
+            document.getElementById('raceDateInput').value = upcomingRaceSetting.date;
+            document.getElementById('raceDistInput').value = upcomingRaceSetting.distance;
+            localStorage.setItem('upcomingRace', JSON.stringify(upcomingRaceSetting));
+          }
+          if (data.theme) {
+            currentThemeSetting = data.theme;
+            setThemeMode(data.theme, false);
+          }
+          updateRaceCountdownWidget();
+          if (allRunsCache.length > 0) {
+            calculatePRsAndGoals(allRunsCache);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load server settings:', err);
+      }
     }
 
-    function saveUpcomingRaceSetting() {
+    async function syncSettingsToServer() {
+      try {
+        await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            monthlyTargetKm: monthlyTargetKmSetting,
+            raceName: upcomingRaceSetting ? upcomingRaceSetting.name : '',
+            raceDate: upcomingRaceSetting ? upcomingRaceSetting.date : '',
+            raceDistance: upcomingRaceSetting ? upcomingRaceSetting.distance : '',
+            theme: currentThemeSetting
+          })
+        });
+      } catch (err) {
+        console.error('Failed to sync settings to server:', err);
+      }
+    }
+
+    async function saveUpcomingRaceSetting() {
       const name = document.getElementById('raceNameInput').value.trim();
       const date = document.getElementById('raceDateInput').value;
       const distance = document.getElementById('raceDistInput').value;
@@ -1288,8 +1345,9 @@ app.get('/', async (req: Request, res: Response) => {
 
       upcomingRaceSetting = { name, date, distance };
       localStorage.setItem('upcomingRace', JSON.stringify(upcomingRaceSetting));
-      alert('Upcoming race "' + name + '" saved successfully!');
       updateRaceCountdownWidget();
+      await syncSettingsToServer();
+      alert('Upcoming race "' + name + '" saved across all your devices!');
     }
 
     function updateRaceCountdownWidget() {
@@ -1342,7 +1400,8 @@ app.get('/', async (req: Request, res: Response) => {
       raceCountdownTimer = setInterval(tick, 1000);
     }
 
-    function setThemeMode(mode, triggerRender = true) {
+    async function setThemeMode(mode, triggerRender = true) {
+      currentThemeSetting = mode;
       const lightBtn = document.getElementById('themeLightBtn');
       const darkBtn = document.getElementById('themeDarkBtn');
 
@@ -1360,18 +1419,22 @@ app.get('/', async (req: Request, res: Response) => {
         Chart.defaults.color = '#64748b';
       }
 
-      if (triggerRender && allRunsCache.length > 0) {
-        renderCharts(allRunsCache);
+      if (triggerRender) {
+        await syncSettingsToServer();
+        if (allRunsCache.length > 0) {
+          renderCharts(allRunsCache);
+        }
       }
     }
 
-    function saveMonthlyGoalSetting() {
+    async function saveMonthlyGoalSetting() {
       const inp = document.getElementById('monthlyGoalInput');
       const val = Number(inp.value);
       if (val && val > 0) {
         monthlyTargetKmSetting = val;
         localStorage.setItem('monthlyTargetKm', val);
-        alert('Monthly Target Goal updated to ' + val + ' km!');
+        await syncSettingsToServer();
+        alert('Monthly Target Goal updated to ' + val + ' km across all devices!');
         if (allRunsCache.length > 0) {
           calculatePRsAndGoals(allRunsCache);
         }
@@ -2094,6 +2157,97 @@ app.get('/', async (req: Request, res: Response) => {
 </html>`;
 
   res.send(html);
+});
+
+// Settings API GET Endpoint (Cross-device Sync)
+app.get('/api/settings', async (req: Request, res: Response) => {
+  const useSupabase = isSupabaseConfigured();
+  const supabase = getSupabaseClient();
+
+  if (useSupabase && supabase) {
+    try {
+      const { data } = await supabase.from('user_settings').select('*').eq('id', 'default').maybeSingle();
+      if (data) {
+        return res.json({
+          monthlyTargetKm: data.monthly_target_km || 100,
+          raceName: data.race_name || '',
+          raceDate: data.race_date || '',
+          raceDistance: data.race_distance || '',
+          theme: data.theme || 'light'
+        });
+      }
+    } catch (err) {}
+  }
+
+  try {
+    const db = await getDb();
+    const row = await db.get("SELECT * FROM user_settings WHERE id = 'default'");
+    if (row) {
+      return res.json({
+        monthlyTargetKm: row.monthly_target_km || 100,
+        raceName: row.race_name || '',
+        raceDate: row.race_date || '',
+        raceDistance: row.race_distance || '',
+        theme: row.theme || 'light'
+      });
+    }
+  } catch (err) {}
+
+  res.json({
+    monthlyTargetKm: 100,
+    raceName: '',
+    raceDate: '',
+    raceDistance: '',
+    theme: 'light'
+  });
+});
+
+// Settings API POST Endpoint (Cross-device Sync)
+app.post('/api/settings', async (req: Request, res: Response) => {
+  const { monthlyTargetKm, raceName, raceDate, raceDistance, theme } = req.body;
+  const useSupabase = isSupabaseConfigured();
+  const supabase = getSupabaseClient();
+
+  if (useSupabase && supabase) {
+    try {
+      await supabase.from('user_settings').upsert({
+        id: 'default',
+        monthly_target_km: monthlyTargetKm ? Number(monthlyTargetKm) : 100,
+        race_name: raceName || null,
+        race_date: raceDate || null,
+        race_distance: raceDistance ? Number(raceDistance) : null,
+        theme: theme || 'light',
+        updated_at: new Date().toISOString()
+      });
+      return res.json({ success: true, message: 'Settings saved to Supabase' });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  try {
+    const db = await getDb();
+    await db.run(`
+      INSERT INTO user_settings (id, monthly_target_km, race_name, race_date, race_distance, theme, updated_at)
+      VALUES ('default', ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(id) DO UPDATE SET
+        monthly_target_km = excluded.monthly_target_km,
+        race_name = excluded.race_name,
+        race_date = excluded.race_date,
+        race_distance = excluded.race_distance,
+        theme = excluded.theme,
+        updated_at = CURRENT_TIMESTAMP
+    `, [
+      monthlyTargetKm ? Number(monthlyTargetKm) : 100,
+      raceName || null,
+      raceDate || null,
+      raceDistance ? Number(raceDistance) : null,
+      theme || 'light'
+    ]);
+    res.json({ success: true, message: 'Settings saved to SQLite' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // OAuth Redirect endpoint
