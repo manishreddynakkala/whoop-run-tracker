@@ -26,7 +26,6 @@ app.get('/', async (req: Request, res: Response) => {
   const supabase = getSupabaseClient();
 
   let token: any = null;
-  let dbType = useSupabase ? 'Supabase Postgres' : 'Local SQLite';
 
   if (useSupabase && supabase) {
     const tokenRes = await supabase.from('whoop_tokens').select('*').maybeSingle();
@@ -45,7 +44,7 @@ app.get('/', async (req: Request, res: Response) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>WHOOP // Run Performance Hub</title>
+  <title>Run Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -132,14 +131,6 @@ app.get('/', async (req: Request, res: Response) => {
       background: linear-gradient(to right, #ffffff, #cbd5e1);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-    }
-
-    .sub-brand {
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: var(--text-dim);
     }
 
     .header-actions {
@@ -598,10 +589,9 @@ app.get('/', async (req: Request, res: Response) => {
   <div class="container">
     <header>
       <div class="logo-section">
-        <div class="logo-badge">W</div>
+        <div class="logo-badge">R</div>
         <div class="title-group">
-          <h1>WHOOP // RUN TRACKER</h1>
-          <div class="sub-brand">Powered by ${dbType}</div>
+          <h1>RUN TRACKER</h1>
         </div>
       </div>
       <div class="header-actions">
@@ -744,7 +734,7 @@ app.get('/', async (req: Request, res: Response) => {
           </tr>
         </thead>
         <tbody id="runsTableBody">
-          <tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-dim)">Loading WHOOP running activities...</td></tr>
+          <tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-dim)">Loading running activities...</td></tr>
         </tbody>
       </table>
     </div>
@@ -1455,7 +1445,7 @@ app.get('/api/status', async (req: Request, res: Response) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`WHOOP Run Tracker Hub running on http://localhost:${PORT}`);
+  console.log(`Run Tracker Hub running on http://localhost:${PORT}`);
 });
 
 export default app;
