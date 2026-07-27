@@ -45,153 +45,217 @@ app.get('/', async (req: Request, res: Response) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>WHOOP Run Tracker Hub</title>
+  <title>WHOOP // Run Performance Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #0b0f19;
-      --card-bg: rgba(22, 28, 45, 0.75);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --accent-red: #ff3b5c;
-      --accent-orange: #ff7e36;
-      --accent-cyan: #00f2fe;
-      --accent-green: #00e676;
-      --accent-purple: #a78bfa;
-      --accent-pink: #ec4899;
-      --accent-yellow: #f59e0b;
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
+      --bg-black: #050507;
+      --card-bg: rgba(18, 18, 24, 0.85);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --whoop-red: #ff0033;
+      --whoop-red-glow: rgba(255, 0, 51, 0.35);
+      --whoop-green: #00e676;
+      --whoop-green-glow: rgba(0, 230, 118, 0.35);
+      --whoop-cyan: #00f2fe;
+      --whoop-purple: #a78bfa;
+      --whoop-pink: #ec4899;
+      --whoop-gold: #f59e0b;
+      --whoop-orange: #ff7e36;
+      --text-white: #ffffff;
+      --text-gray: #a1a1aa;
+      --text-dim: #71717a;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: var(--bg-dark);
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-black);
       background-image: 
-        radial-gradient(at 10% 10%, rgba(255, 59, 92, 0.15) 0px, transparent 50%),
-        radial-gradient(at 90% 90%, rgba(0, 242, 254, 0.15) 0px, transparent 50%);
-      color: var(--text-main);
+        radial-gradient(at 15% 15%, rgba(255, 0, 51, 0.18) 0px, transparent 45%),
+        radial-gradient(at 85% 85%, rgba(0, 242, 254, 0.12) 0px, transparent 45%);
+      color: var(--text-white);
       min-height: 100vh;
-      padding: 1.25rem 0.75rem;
+      padding: 1.5rem 1rem;
+      line-height: 1.5;
     }
 
     .container {
-      max-width: 1080px;
+      max-width: 1140px;
       margin: 0 auto;
     }
 
+    /* Header Bar */
     header {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1.25rem;
+      gap: 16px;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
       border-bottom: 1px solid var(--card-border);
     }
 
     .logo-section {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
     }
 
     .logo-badge {
-      background: linear-gradient(135deg, var(--accent-red), var(--accent-orange));
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
+      background: linear-gradient(135deg, var(--whoop-red), #cc0029);
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 800;
-      font-size: 1.4rem;
-      box-shadow: 0 4px 20px rgba(255, 59, 92, 0.4);
+      font-weight: 900;
+      font-size: 1.5rem;
+      letter-spacing: -1px;
+      color: white;
+      box-shadow: 0 4px 25px var(--whoop-red-glow);
     }
 
-    h1 {
-      font-size: 1.6rem;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      background: linear-gradient(to right, #ffffff, #9ca3af);
+    .title-group h1 {
+      font-size: 1.7rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: linear-gradient(to right, #ffffff, #d4d4d8);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+    }
+
+    .sub-brand {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
     .status-pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 14px;
-      border-radius: 20px;
+      padding: 7px 16px;
+      border-radius: 24px;
       font-size: 0.82rem;
-      font-weight: 600;
-      background: rgba(255, 255, 255, 0.05);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--card-border);
     }
 
     .status-dot {
-      width: 8px;
-      height: 8px;
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
     }
 
-    .status-connected { background-color: var(--accent-green); box-shadow: 0 0 10px var(--accent-green); }
-    .status-disconnected { background-color: var(--accent-red); box-shadow: 0 0 10px var(--accent-red); }
+    .status-connected { background-color: var(--whoop-green); box-shadow: 0 0 12px var(--whoop-green-glow); }
+    .status-disconnected { background-color: var(--whoop-red); box-shadow: 0 0 12px var(--whoop-red-glow); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.25 ease;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--whoop-red), #b30024);
+      color: white;
+      box-shadow: 0 4px 20px var(--whoop-red-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(255, 0, 51, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--text-white);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
 
     /* Date Period Filter Bar */
     .filter-bar {
       background: var(--card-bg);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
       border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 1rem 1.25rem;
-      margin-bottom: 1.5rem;
+      border-radius: 20px;
+      padding: 1.1rem 1.5rem;
+      margin-bottom: 1.75rem;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
+      gap: 1.25rem;
     }
 
     .filter-title {
-      font-size: 0.85rem;
-      font-weight: 700;
+      font-size: 0.82rem;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
+      letter-spacing: 1.5px;
+      color: var(--text-gray);
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
 
     .preset-group {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 8px;
     }
 
     .preset-btn {
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--card-border);
-      color: var(--text-main);
-      padding: 6px 12px;
-      border-radius: 8px;
+      color: var(--text-gray);
+      padding: 8px 16px;
+      border-radius: 12px;
       font-size: 0.82rem;
-      font-weight: 600;
+      font-weight: 700;
+      letter-spacing: 0.5px;
       cursor: pointer;
       transition: all 0.2s ease;
     }
 
     .preset-btn:hover, .preset-btn.active {
-      background: linear-gradient(135deg, var(--accent-red), var(--accent-orange));
+      background: var(--whoop-red);
       color: white;
       border-color: transparent;
-      box-shadow: 0 2px 10px rgba(255, 59, 92, 0.3);
+      box-shadow: 0 4px 15px var(--whoop-red-glow);
     }
 
     .date-inputs {
@@ -202,161 +266,151 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .date-inputs input[type="date"] {
-      background: rgba(0, 0, 0, 0.4);
+      background: rgba(0, 0, 0, 0.5);
       border: 1px solid var(--card-border);
-      color: var(--text-main);
-      padding: 6px 10px;
-      border-radius: 8px;
+      color: var(--text-white);
+      padding: 8px 12px;
+      border-radius: 10px;
       font-family: inherit;
       font-size: 0.82rem;
+      font-weight: 600;
     }
 
-    /* Summary Cards Grid */
+    /* Metric Cards Grid */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+      gap: 1.1rem;
+      margin-bottom: 2rem;
     }
 
     .card {
       background: var(--card-bg);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
       border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 1.1rem;
-      transition: transform 0.2s ease;
+      border-radius: 20px;
+      padding: 1.25rem 1.1rem;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
     }
 
     .card-title {
-      font-size: 0.78rem;
-      color: var(--text-muted);
+      font-size: 0.75rem;
+      color: var(--text-dim);
       text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 0.3rem;
+      letter-spacing: 1.2px;
+      font-weight: 800;
+      margin-bottom: 0.4rem;
     }
 
     .card-value {
-      font-size: 1.7rem;
-      font-weight: 800;
+      font-size: 1.85rem;
+      font-weight: 900;
       letter-spacing: -0.8px;
+      line-height: 1.1;
     }
 
     .card-subtitle {
       font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-top: 0.3rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      margin-top: 0.4rem;
     }
 
-    .header-actions {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 8px 14px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 0.85rem;
-      cursor: pointer;
-      text-decoration: none;
-      transition: all 0.2s ease;
-      border: none;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent-red), var(--accent-orange));
-      color: white;
-      box-shadow: 0 4px 15px rgba(255, 59, 92, 0.3);
-    }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-main);
-      border: 1px solid var(--card-border);
-    }
-
+    /* Running Activities Table Section */
     .section-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1rem;
+      margin-bottom: 1.1rem;
     }
 
     .section-title {
-      font-size: 1.15rem;
-      font-weight: 700;
+      font-size: 1.2rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .table-container {
       background: var(--card-bg);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
       border: 1px solid var(--card-border);
-      border-radius: 16px;
+      border-radius: 20px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
 
     table {
       width: 100%;
-      min-width: 780px;
+      min-width: 800px;
       border-collapse: collapse;
       text-align: left;
     }
 
     th {
-      background: rgba(255, 255, 255, 0.03);
-      padding: 0.85rem 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 1rem 1.25rem;
       font-size: 0.75rem;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
+      letter-spacing: 1.5px;
+      font-weight: 800;
+      color: var(--text-dim);
       border-bottom: 1px solid var(--card-border);
     }
 
     td {
-      padding: 0.85rem 1rem;
+      padding: 1rem 1.25rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      font-size: 0.88rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
     }
 
     .badge {
       display: inline-block;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.3px;
     }
 
     .badge-strain {
-      background: rgba(255, 59, 92, 0.15);
-      color: var(--accent-red);
-      border: 1px solid rgba(255, 59, 92, 0.3);
+      background: rgba(255, 0, 51, 0.15);
+      color: var(--whoop-red);
+      border: 1px solid rgba(255, 0, 51, 0.3);
     }
 
     .badge-hr {
       background: rgba(255, 126, 54, 0.15);
-      color: var(--accent-orange);
+      color: var(--whoop-orange);
       border: 1px solid rgba(255, 126, 54, 0.3);
     }
 
     .badge-pace {
       background: rgba(236, 72, 153, 0.15);
-      color: var(--accent-pink);
+      color: var(--whoop-pink);
       border: 1px solid rgba(236, 72, 153, 0.3);
     }
 
     .badge-cal {
       background: rgba(245, 158, 11, 0.15);
-      color: var(--accent-yellow);
+      color: var(--whoop-gold);
       border: 1px solid rgba(245, 158, 11, 0.3);
     }
   </style>
@@ -366,9 +420,9 @@ app.get('/', async (req: Request, res: Response) => {
     <header>
       <div class="logo-section">
         <div class="logo-badge">W</div>
-        <div>
-          <h1>WHOOP Run Tracker</h1>
-          <div style="font-size:0.78rem; color: var(--text-muted)">Powered by ${dbType}</div>
+        <div class="title-group">
+          <h1>WHOOP // RUN TRACKER</h1>
+          <div class="sub-brand">Powered by ${dbType}</div>
         </div>
       </div>
       <div class="header-actions">
@@ -388,17 +442,17 @@ app.get('/', async (req: Request, res: Response) => {
     <!-- Date Period Filter Controls -->
     <div class="filter-bar">
       <div class="filter-title">
-        📅 Select Date Period:
+        ⚡ Select Period:
       </div>
       <div class="preset-group">
-        <button class="preset-btn" onclick="selectPreset('7d', this)">Last 7 Days</button>
-        <button class="preset-btn" onclick="selectPreset('30d', this)">Last 30 Days</button>
+        <button class="preset-btn" onclick="selectPreset('7d', this)">7 Days</button>
+        <button class="preset-btn" onclick="selectPreset('30d', this)">30 Days</button>
         <button class="preset-btn" onclick="selectPreset('month', this)">This Month</button>
         <button class="preset-btn active" onclick="selectPreset('all', this)">All Time</button>
       </div>
       <div class="date-inputs">
         <input type="date" id="startDate" onchange="customDateChanged()" />
-        <span style="font-size:0.8rem; color:var(--text-muted)">to</span>
+        <span style="font-size:0.8rem; color:var(--text-dim)">to</span>
         <input type="date" id="endDate" onchange="customDateChanged()" />
       </div>
     </div>
@@ -406,46 +460,46 @@ app.get('/', async (req: Request, res: Response) => {
     <!-- Summary Metrics for Selected Period -->
     <div class="grid">
       <div class="card">
-        <div class="card-title">Running Sessions</div>
-        <div class="card-value" id="kpiRunsCount" style="color: var(--accent-cyan)">-</div>
-        <div class="card-subtitle">Completed runs</div>
+        <div class="card-title">Run Count</div>
+        <div class="card-value" id="kpiRunsCount" style="color: var(--whoop-cyan)">-</div>
+        <div class="card-subtitle">Sessions</div>
       </div>
       <div class="card">
         <div class="card-title">Total Distance</div>
-        <div class="card-value" id="kpiDistance" style="color: var(--accent-red)">-</div>
-        <div class="card-subtitle">Kilometers run</div>
+        <div class="card-value" id="kpiDistance" style="color: var(--whoop-red)">-</div>
+        <div class="card-subtitle">Kilometers</div>
       </div>
       <div class="card">
         <div class="card-title">Avg Pace</div>
-        <div class="card-value" id="kpiAvgPace" style="color: var(--accent-pink)">-</div>
+        <div class="card-value" id="kpiAvgPace" style="color: var(--whoop-pink)">-</div>
         <div class="card-subtitle">min / km</div>
       </div>
       <div class="card">
-        <div class="card-title">Total Time</div>
-        <div class="card-value" id="kpiDuration" style="color: var(--accent-purple)">-</div>
+        <div class="card-title">Total Duration</div>
+        <div class="card-value" id="kpiDuration" style="color: var(--whoop-purple)">-</div>
         <div class="card-subtitle">Hours & Mins</div>
       </div>
       <div class="card">
         <div class="card-title">Total Calories</div>
-        <div class="card-value" id="kpiCalories" style="color: var(--accent-yellow)">-</div>
+        <div class="card-value" id="kpiCalories" style="color: var(--whoop-gold)">-</div>
         <div class="card-subtitle">kcal burned</div>
       </div>
       <div class="card">
-        <div class="card-title">Average Strain</div>
-        <div class="card-value" id="kpiAvgStrain" style="color: var(--accent-orange)">-</div>
-        <div class="card-subtitle">WHOOP strain score</div>
+        <div class="card-title">Avg Strain</div>
+        <div class="card-value" id="kpiAvgStrain" style="color: var(--whoop-orange)">-</div>
+        <div class="card-subtitle">WHOOP 0-21</div>
       </div>
       <div class="card">
         <div class="card-title">Avg / Max HR</div>
-        <div class="card-value" id="kpiAvgHr" style="font-size:1.4rem; color:var(--accent-green)">-</div>
-        <div class="card-subtitle">BPM average</div>
+        <div class="card-value" id="kpiAvgHr" style="font-size:1.45rem; color:var(--whoop-green)">-</div>
+        <div class="card-subtitle">BPM</div>
       </div>
     </div>
 
     <!-- Running Activities Table -->
     <div class="section-header">
       <div class="section-title">
-        🏃 Running Activities <span id="periodLabel" style="font-size:0.85rem; font-weight:400; color:var(--text-muted)">(All Time)</span>
+        🏃 Running Performance History <span id="periodLabel" style="font-size:0.85rem; font-weight:500; color:var(--text-dim)">(All Time)</span>
       </div>
     </div>
 
@@ -464,7 +518,7 @@ app.get('/', async (req: Request, res: Response) => {
           </tr>
         </thead>
         <tbody id="runsTableBody">
-          <tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-muted)">Loading running activities...</td></tr>
+          <tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-dim)">Loading WHOOP running activities...</td></tr>
         </tbody>
       </table>
     </div>
@@ -478,7 +532,7 @@ app.get('/', async (req: Request, res: Response) => {
       if (!distKm || distKm <= 0 || !durationMs) return 'N/A';
       const totalMins = durationMs / 60000;
       const paceDec = totalMins / distKm;
-      if (paceDec > 30 || paceDec < 2) return 'N/A'; // Filter unrealistic pace numbers
+      if (paceDec > 30 || paceDec < 2) return 'N/A';
       const mins = Math.floor(paceDec);
       let secs = Math.round((paceDec - mins) * 60);
       let finalMins = mins;
@@ -501,7 +555,7 @@ app.get('/', async (req: Request, res: Response) => {
 
     async function loadRuns() {
       const tbody = document.getElementById('runsTableBody');
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-muted)">Loading...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-dim)">Loading...</td></tr>';
 
       const params = new URLSearchParams();
       if (currentStartDate) params.append('startDate', currentStartDate);
@@ -564,7 +618,7 @@ app.get('/', async (req: Request, res: Response) => {
 
         // Render Table Rows
         if (runs.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-muted)">No running activities found for the selected date period.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-dim)">No running activities found for the selected date period.</td></tr>';
           return;
         }
 
@@ -593,7 +647,7 @@ app.get('/', async (req: Request, res: Response) => {
             <tr>
               <td><strong>\${dateStr}</strong></td>
               <td>\${r.sport_name}</td>
-              <td><strong style="color:var(--accent-cyan)">\${distKmStr}</strong></td>
+              <td><strong style="color:var(--whoop-cyan)">\${distKmStr}</strong></td>
               <td><span class="badge badge-pace">\${paceStr}</span></td>
               <td>\${durationMin} mins</td>
               <td><span class="badge badge-strain">\${r.strain ? Number(r.strain).toFixed(1) : 'N/A'}</span></td>
@@ -604,7 +658,7 @@ app.get('/', async (req: Request, res: Response) => {
         }).join('');
 
       } catch (err) {
-        tbody.innerHTML = \`<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--accent-red)">Error loading data: \${err.message}</td></tr>\`;
+        tbody.innerHTML = \`<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--whoop-red)">Error loading data: \${err.message}</td></tr>\`;
       }
     }
 
