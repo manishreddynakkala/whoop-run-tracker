@@ -176,17 +176,13 @@ app.get('/', async (req: Request, res: Response) => {
       white-space: nowrap;
     }
 
-    /* Scrollable Top Tabs Bar for Mobile */
-    .top-tabs {
+    /* Desktop Navigation Tabs */
+    .top-tabs-desktop {
       display: flex;
       align-items: center;
       gap: 0.25rem;
       height: 62px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
     }
-    .top-tabs::-webkit-scrollbar { display: none; }
 
     .top-tab-btn {
       background: transparent;
@@ -199,11 +195,11 @@ app.get('/', async (req: Request, res: Response) => {
       cursor: pointer;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
       border-bottom: 3px solid transparent;
       white-space: nowrap;
       transition: all 0.2s ease;
-      flex-shrink: 0;
     }
 
     .top-tab-btn:hover {
@@ -216,11 +212,27 @@ app.get('/', async (req: Request, res: Response) => {
       border-bottom-color: var(--theme-blue);
     }
 
+    /* Dedicated Mobile Secondary Tab Bar (Portrait Mode Fix) */
+    .mobile-tab-bar {
+      display: none;
+      background-color: var(--nav-bg);
+      border-top: 1px solid var(--nav-border);
+      width: 100%;
+      padding: 0 0.5rem;
+    }
+
+    .mobile-tab-bar .top-tab-btn {
+      flex: 1;
+      height: 46px;
+      font-size: 0.85rem;
+      padding: 0 4px;
+    }
+
     /* Top Right Action Controls */
     .nav-right {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-shrink: 0;
     }
 
@@ -617,9 +629,10 @@ app.get('/', async (req: Request, res: Response) => {
     .goal-footer {
       display: flex;
       justify-content: space-between;
-      font-size: 0.76rem;
+      font-size: 0.78rem;
       color: var(--text-muted);
       font-weight: 500;
+      gap: 6px;
     }
 
     /* Personal Records (PRs) Section */
@@ -943,19 +956,23 @@ app.get('/', async (req: Request, res: Response) => {
       border: 1px solid var(--badge-border);
     }
 
-    /* Mobile Media Queries (iPhone 16 / Mobile Devices) */
-    @media (max-width: 600px) {
+    /* Mobile Media Queries (iPhone Portrait Mode Overhaul) */
+    @media (max-width: 650px) {
+      .top-navbar {
+        height: auto;
+      }
       .nav-container {
         padding: 0 0.85rem;
+        height: 54px;
       }
       .brand-name {
         font-size: 1.1rem;
       }
-      .nav-left {
-        gap: 0.75rem;
+      .top-tabs-desktop {
+        display: none;
       }
-      .status-badge span {
-        display: inline-block;
+      .mobile-tab-bar {
+        display: flex;
       }
       .main-container {
         padding: 0 0.85rem;
@@ -1010,12 +1027,17 @@ app.get('/', async (req: Request, res: Response) => {
       .date-inputs input[type="date"] {
         flex: 1;
       }
+      .goal-footer {
+        flex-direction: column;
+        gap: 4px;
+      }
     }
   </style>
 </head>
 <body>
   <!-- Header Navigation -->
   <nav class="top-navbar">
+    <!-- Row 1: Brand Logo & Status / Sync Actions -->
     <div class="nav-container">
       <div class="nav-left">
         <a href="/" class="brand-logo">
@@ -1023,8 +1045,8 @@ app.get('/', async (req: Request, res: Response) => {
           <div class="brand-name">Run Tracker</div>
         </a>
 
-        <!-- Top Navigation Tabs Bar -->
-        <div class="top-tabs">
+        <!-- Desktop Navigation Tabs (Hidden on Mobile) -->
+        <div class="top-tabs-desktop">
           <button class="top-tab-btn active" onclick="switchTab('overviewTab', this)">Overview</button>
           <button class="top-tab-btn" onclick="switchTab('analyticsTab', this)">Analytics</button>
           <button class="top-tab-btn" onclick="switchTab('historyTab', this)">History</button>
@@ -1032,7 +1054,7 @@ app.get('/', async (req: Request, res: Response) => {
         </div>
       </div>
 
-      <!-- Top Right Actions Position (Dynamic Status Badge & Sync Data) -->
+      <!-- Top Right Actions Position -->
       <div class="nav-right">
         <div class="status-badge" id="statusBadgeEl">
           <div class="status-dot ${hasTokenRecord ? 'active' : 'inactive'}"></div>
@@ -1042,6 +1064,14 @@ app.get('/', async (req: Request, res: Response) => {
           Sync Data
         </button>
       </div>
+    </div>
+
+    <!-- Row 2: Dedicated Mobile Secondary Navigation Bar (100% Visible in Portrait Mode) -->
+    <div class="mobile-tab-bar">
+      <button class="top-tab-btn active" onclick="switchTab('overviewTab', this)">Overview</button>
+      <button class="top-tab-btn" onclick="switchTab('analyticsTab', this)">Analytics</button>
+      <button class="top-tab-btn" onclick="switchTab('historyTab', this)">History</button>
+      <button class="top-tab-btn" onclick="switchTab('settingsTab', this)">Settings</button>
     </div>
   </nav>
 
@@ -1665,7 +1695,13 @@ app.get('/', async (req: Request, res: Response) => {
       document.querySelectorAll('.top-tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-      if (btnEl) btnEl.classList.add('active');
+      // Highlight active button in both desktop & mobile bars
+      document.querySelectorAll('.top-tab-btn').forEach(b => {
+        if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(tabId)) {
+          b.classList.add('active');
+        }
+      });
+
       const targetContent = document.getElementById(tabId);
       if (targetContent) targetContent.classList.add('active');
 
