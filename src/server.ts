@@ -762,16 +762,16 @@ app.get('/', async (req: Request, res: Response) => {
 
     <!-- TAB 1: OVERVIEW & RECORDS -->
     <div class="tab-content active" id="overviewTab">
-      <!-- Automated Performance Insights Banner -->
+      <!-- Automated Performance Insights Banner (Based on Latest 10 Runs) -->
       <div class="insights-card">
-        <div class="insights-header">Performance Trend Insights</div>
-        <div class="insights-text" id="insightsContent">Analyzing your recent running activities...</div>
+        <div class="insights-header">Performance Trend Insights (Latest 10 Runs)</div>
+        <div class="insights-text" id="insightsContent">Analyzing your latest 10 running activities...</div>
       </div>
 
-      <!-- Monthly Goal Tracker -->
+      <!-- Current Calendar Month Target Goal -->
       <div class="goal-card">
         <div class="goal-header">
-          <div class="goal-title">Monthly Target Goal (100 km)</div>
+          <div class="goal-title" id="goalTitleText">Current Month Target Goal (100 km)</div>
           <div class="goal-stats" id="goalPercentage">0% Completed</div>
         </div>
         <div class="progress-bar-bg">
@@ -779,7 +779,7 @@ app.get('/', async (req: Request, res: Response) => {
         </div>
         <div class="goal-footer">
           <span id="goalProgressSubtext">0.00 km / 100.00 km completed</span>
-          <span id="goalRemainingSubtext">100.00 km remaining this month</span>
+          <span id="goalRemainingSubtext">100.00 km remaining</span>
         </div>
       </div>
 
@@ -864,7 +864,7 @@ app.get('/', async (req: Request, res: Response) => {
           </div>
         </div>
 
-        <!-- Chart 2: Heart Rate Zone Distribution -->
+        <!-- Chart 2: Heart Rate Zone Breakdown -->
         <div class="chart-card">
           <div class="chart-header">
             <div class="chart-title">Heart Rate Zone Breakdown (Zone 1-5)</div>
@@ -969,6 +969,7 @@ app.get('/', async (req: Request, res: Response) => {
   <script>
     let currentStartDate = null;
     let currentEndDate = null;
+    let allRunsCache = [];
     let chartInstanceDistancePace = null;
     let chartInstanceHrZones = null;
     let chartInstanceStrainHr = null;
@@ -1044,19 +1045,28 @@ app.get('/', async (req: Request, res: Response) => {
       const tbody = document.getElementById('runsTableBody');
       tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-dim)">Loading...</td></tr>';
 
-      const params = new URLSearchParams();
-      if (currentStartDate) params.append('startDate', currentStartDate);
-      if (currentEndDate) params.append('endDate', currentEndDate);
-
       try {
-        const res = await fetch('/api/runs?' + params.toString());
-        const data = await res.json();
-        const runs = data.runs || [];
+        // 1. Fetch All Runs (unfiltered) to compute PRs, Current Calendar Month Goal, and Latest 10 Insights
+        const allRes = await fetch('/api/runs');
+        const allData = await allRes.json();
+        allRunsCache = allData.runs || [];
 
-        // Calculate All-Time PRs & Monthly Goal from full run dataset
-        calculatePRsAndGoals(runs);
+        // Always compute PRs & Monthly Goal based on full dataset
+        calculatePRsAndGoals(allRunsCache);
+        renderLatest10Insights(allRunsCache);
 
-        // Update KPI Cards for selected period
+        // 2. Determine Filtered Runs for History table and Period KPIs
+        let filteredRuns = allRunsCache;
+        if (currentStartDate || currentEndDate) {
+          const params = new URLSearchParams();
+          if (currentStartDate) params.append('startDate', currentStartDate);
+          if (currentEndDate) params.append('endDate', currentEndDate);
+          const filteredRes = await fetch('/api/runs?' + params.toString());
+          const filteredData = await filteredRes.json();
+          filteredRuns = filteredData.runs || [];
+        }
+
+        // Update Summary KPI Cards for current selected period
         let totalDistKm = 0;
         let totalDurationMs = 0;
         let totalPaceDistKm = 0;
@@ -1068,7 +1078,7 @@ app.get('/', async (req: Request, res: Response) => {
         let hrCount = 0;
         let maxHrReached = 0;
 
-        runs.forEach(r => {
+        filteredRuns.forEach(r => {
           let distKm = 0;
           if (r.distance_km) distKm = Number(r.distance_km);
           else if (r.distance_meters) distKm = Number(r.distance_meters) / 1000;
@@ -1091,7 +1101,7 @@ app.get('/', async (req: Request, res: Response) => {
           }
         });
 
-        document.getElementById('kpiRunsCount').innerText = runs.length;
+        document.getElementById('kpiRunsCount').innerText = filteredRuns.length;
         document.getElementById('kpiDistance').innerText = totalDistKm > 0 ? totalDistKm.toFixed(2) + ' km' : '0 km';
         document.getElementById('kpiAvgPace').innerText = calcPaceString(totalPaceDurationMs, totalPaceDistKm);
         document.getElementById('kpiCalories').innerText = totalCaloriesKcal > 0 ? totalCaloriesKcal.toLocaleString() + ' kcal' : 'N/A';
@@ -1106,17 +1116,14 @@ app.get('/', async (req: Request, res: Response) => {
         const avgHrVal = hrCount > 0 ? Math.round(totalAvgHr / hrCount) : null;
         document.getElementById('kpiAvgHr').innerText = avgHrVal ? \`\${avgHrVal} / \${maxHrReached} bpm\` : 'N/A';
 
-        // Render Automated Insights
-        renderInsights(runs, totalDistKm, totalPaceDurationMs, totalPaceDistKm, strainCount > 0 ? (totalStrain / strainCount) : 0, avgHrVal);
-
-        // Render Table Rows
-        if (runs.length === 0) {
+        // Render History Table Rows
+        if (filteredRuns.length === 0) {
           tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-dim)">No running activities found for the selected date period.</td></tr>';
           renderCharts([]);
           return;
         }
 
-        tbody.innerHTML = runs.map(r => {
+        tbody.innerHTML = filteredRuns.map(r => {
           const dateStr = new Date(r.start_time).toLocaleString([], {
             dateStyle: 'medium',
             timeStyle: 'short',
@@ -1151,29 +1158,30 @@ app.get('/', async (req: Request, res: Response) => {
           \`;
         }).join('');
 
-        renderCharts(runs);
+        renderCharts(filteredRuns);
 
       } catch (err) {
         tbody.innerHTML = \`<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: #ef4444">Error loading data: \${err.message}</td></tr>\`;
       }
     }
 
-    function calculatePRsAndGoals(runs) {
-      if (!runs || runs.length === 0) return;
+    function calculatePRsAndGoals(allRuns) {
+      if (!allRuns || allRuns.length === 0) return;
 
-      // 1. Personal Records (PRs)
+      // 1. Personal Records (PRs) from ALL runs
       let longestRun = 0, longestRunDate = '';
       let fastestPaceDec = 999, fastestPaceStr = 'N/A', fastestPaceDate = '';
       let maxStrain = 0, maxStrainDate = '';
       let maxCalories = 0, maxCalDate = '';
 
-      // Monthly Goal (Current Month)
+      // 2. Current Calendar Month Goal
       const now = new Date();
       const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth();
+      const currentMonth = now.getMonth(); // 0-indexed
+      const monthName = now.toLocaleString('default', { month: 'long' });
       let thisMonthKm = 0;
 
-      runs.forEach(r => {
+      allRuns.forEach(r => {
         const d = new Date(r.start_time);
         const dStr = (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear();
 
@@ -1210,7 +1218,7 @@ app.get('/', async (req: Request, res: Response) => {
           maxCalDate = dStr;
         }
 
-        // Monthly Goal Accumulation
+        // Current Calendar Month Accumulation
         if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
           thisMonthKm += distKm;
         }
@@ -1228,40 +1236,66 @@ app.get('/', async (req: Request, res: Response) => {
       document.getElementById('prMaxCalories').innerText = maxCalories > 0 ? maxCalories.toLocaleString() + ' kcal' : '-';
       document.getElementById('prCaloriesDate').innerText = maxCalDate || 'Single Session';
 
-      // 2. Monthly Target Goal Progress (Default: 100 km)
+      // Current Calendar Month Target Goal (Default: 100 km)
       const targetKm = 100;
       const percent = Math.min(100, Math.round((thisMonthKm / targetKm) * 100));
       const remainingKm = Math.max(0, targetKm - thisMonthKm);
 
+      document.getElementById('goalTitleText').innerText = monthName + ' ' + currentYear + ' Target Goal (100 km)';
       document.getElementById('goalPercentage').innerText = percent + '% Completed';
       document.getElementById('goalProgressBar').style.width = percent + '%';
-      document.getElementById('goalProgressSubtext').innerText = thisMonthKm.toFixed(2) + ' km / ' + targetKm.toFixed(2) + ' km completed';
-      document.getElementById('goalRemainingSubtext').innerText = remainingKm > 0 ? remainingKm.toFixed(2) + ' km remaining this month' : 'Goal achieved!';
+      document.getElementById('goalProgressSubtext').innerText = thisMonthKm.toFixed(2) + ' km / ' + targetKm.toFixed(2) + ' km completed in ' + monthName;
+      document.getElementById('goalRemainingSubtext').innerText = remainingKm > 0 ? remainingKm.toFixed(2) + ' km remaining in ' + monthName : 'Goal achieved for ' + monthName + '!';
     }
 
-    function renderInsights(runs, totalDistKm, totalPaceDurationMs, totalPaceDistKm, avgStrainVal, avgHrVal) {
+    function renderLatest10Insights(allRuns) {
       const el = document.getElementById('insightsContent');
-      if (!runs || runs.length === 0) {
-        el.innerText = 'No running data available for the selected period.';
+      if (!allRuns || allRuns.length === 0) {
+        el.innerText = 'No running data available.';
         return;
       }
 
-      const avgPaceStr = calcPaceString(totalPaceDurationMs, totalPaceDistKm);
-      const sessionCount = runs.length;
+      // Sort by start_time descending and take top 10 runs
+      const latest10 = [...allRuns]
+        .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
+        .slice(0, 10);
 
-      let trendMsg = \`Over this period, you logged \${sessionCount} running sessions covering a total of \${totalDistKm.toFixed(2)} km at an average pace of \${avgPaceStr}.\`;
+      let totalDistKm = 0;
+      let totalPaceDistKm = 0;
+      let totalPaceDurationMs = 0;
+      let totalStrain = 0;
+      let strainCount = 0;
+      let totalAvgHr = 0;
+      let hrCount = 0;
+
+      latest10.forEach(r => {
+        let distKm = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters)/1000 : 0);
+        totalDistKm += distKm;
+        if (distKm > 0.1 && r.duration_ms) {
+          totalPaceDistKm += distKm;
+          totalPaceDurationMs += Number(r.duration_ms);
+        }
+        if (r.strain) { totalStrain += Number(r.strain); strainCount++; }
+        if (r.average_heart_rate) { totalAvgHr += Number(r.average_heart_rate); hrCount++; }
+      });
+
+      const avgPaceStr = calcPaceString(totalPaceDurationMs, totalPaceDistKm);
+      const avgStrainVal = strainCount > 0 ? (totalStrain / strainCount) : 0;
+      const avgHrVal = hrCount > 0 ? Math.round(totalAvgHr / hrCount) : null;
+
+      let trendMsg = \`Across your latest \${latest10.length} runs, you logged a total of \${totalDistKm.toFixed(2)} km at an average pace of \${avgPaceStr}.\`;
 
       if (avgStrainVal > 0) {
-        trendMsg += \` Your workouts generated an average WHOOP strain of \${avgStrainVal.toFixed(1)}/21\`;
+        trendMsg += \` Your workouts averaged a WHOOP strain of \${avgStrainVal.toFixed(1)}/21\`;
       }
       if (avgHrVal) {
-        trendMsg += \` with a steady average heart rate of \${avgHrVal} BPM.\`;
+        trendMsg += \` with an average heart rate of \${avgHrVal} BPM.\`;
       } else {
         trendMsg += \`.\`;
       }
 
-      if (sessionCount >= 5) {
-        trendMsg += \` Strong training consistency! You are building solid aerobic endurance.\`;
+      if (latest10.length >= 5) {
+        trendMsg += \` Solid execution across recent sessions!\`;
       }
 
       el.innerText = trendMsg;
