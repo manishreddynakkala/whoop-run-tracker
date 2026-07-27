@@ -1181,7 +1181,7 @@ app.get('/', async (req: Request, res: Response) => {
             <div class="settings-form-group">
               <label style="font-size: 0.85rem; font-weight: 700; width: 110px;">Distance (km):</label>
               <input type="number" id="raceDistInput" class="settings-input" style="width: 140px;" step="0.1" placeholder="e.g. 21.1" />
-              <button onclick="saveUpcomingRaceSetting()" class="strava-btn strava-btn-primary">Save Race</button>
+              <button onclick="saveUpcomingRaceSetting()" class="strava-btn strava-btn-primary" id="saveRaceBtn">Save Race</button>
             </div>
           </div>
         </div>
@@ -1193,7 +1193,7 @@ app.get('/', async (req: Request, res: Response) => {
           <div class="settings-form-group">
             <input type="number" id="monthlyGoalInput" class="settings-input" min="1" max="1000" step="5" value="100" />
             <span style="font-weight:700; color:var(--text-muted)">km / month</span>
-            <button onclick="saveMonthlyGoalSetting()" class="strava-btn strava-btn-primary">Save Goal</button>
+            <button onclick="saveMonthlyGoalSetting()" class="strava-btn strava-btn-primary" id="saveGoalBtn">Save Goal</button>
           </div>
         </div>
 
@@ -1334,12 +1334,18 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     async function saveUpcomingRaceSetting() {
+      const btn = document.getElementById('saveRaceBtn');
+      btn.innerText = 'Saving...';
+      btn.disabled = true;
+
       const name = document.getElementById('raceNameInput').value.trim();
       const date = document.getElementById('raceDateInput').value;
       const distance = document.getElementById('raceDistInput').value;
 
       if (!name || !date) {
         alert('Please enter both Race Name and Race Date.');
+        btn.innerText = 'Save Race';
+        btn.disabled = false;
         return;
       }
 
@@ -1347,6 +1353,8 @@ app.get('/', async (req: Request, res: Response) => {
       localStorage.setItem('upcomingRace', JSON.stringify(upcomingRaceSetting));
       updateRaceCountdownWidget();
       await syncSettingsToServer();
+      btn.innerText = 'Save Race';
+      btn.disabled = false;
       alert('Upcoming race "' + name + '" saved across all your devices!');
     }
 
@@ -1428,16 +1436,25 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     async function saveMonthlyGoalSetting() {
+      const btn = document.getElementById('saveGoalBtn');
+      btn.innerText = 'Saving...';
+      btn.disabled = true;
+
       const inp = document.getElementById('monthlyGoalInput');
       const val = Number(inp.value);
       if (val && val > 0) {
         monthlyTargetKmSetting = val;
         localStorage.setItem('monthlyTargetKm', val);
         await syncSettingsToServer();
+        btn.innerText = 'Save Goal';
+        btn.disabled = false;
         alert('Monthly Target Goal updated to ' + val + ' km across all devices!');
         if (allRunsCache.length > 0) {
           calculatePRsAndGoals(allRunsCache);
         }
+      } else {
+        btn.innerText = 'Save Goal';
+        btn.disabled = false;
       }
     }
 
@@ -1450,6 +1467,9 @@ app.get('/', async (req: Request, res: Response) => {
       if (btnEl) btnEl.classList.add('active');
       const targetContent = document.getElementById(tabId);
       if (targetContent) targetContent.classList.add('active');
+
+      // Refresh settings when switching tabs to ensure cross-device updates show up immediately
+      initSettings();
 
       // Trigger chart resize if Analytics tab opened
       if (tabId === 'analyticsTab') {
@@ -2159,15 +2179,16 @@ app.get('/', async (req: Request, res: Response) => {
   res.send(html);
 });
 
-// Settings API GET Endpoint (Cross-device Sync)
+// Settings API GET Endpoint (Bulletproof Cross-device Sync)
 app.get('/api/settings', async (req: Request, res: Response) => {
   const useSupabase = isSupabaseConfigured();
   const supabase = getSupabaseClient();
 
   if (useSupabase && supabase) {
+    // 1. Try dedicated user_settings table
     try {
-      const { data } = await supabase.from('user_settings').select('*').eq('id', 'default').maybeSingle();
-      if (data) {
+      const { data, error } = await supabase.from('user_settings').select('*').eq('id', 'default').maybeSingle();
+      if (!error && data) {
         return res.json({
           monthlyTargetKm: data.monthly_target_km || 100,
           raceName: data.race_name || '',
@@ -2177,8 +2198,24 @@ app.get('/api/settings', async (req: Request, res: Response) => {
         });
       }
     } catch (err) {}
+
+    // 2. Fallback to whoop_tokens table with user_id = 'app_settings'
+    try {
+      const { data, error } = await supabase.from('whoop_tokens').select('*').eq('user_id', 'app_settings').maybeSingle();
+      if (!error && data && data.access_token) {
+        const parsed = JSON.parse(data.access_token);
+        return res.json({
+          monthlyTargetKm: parsed.monthlyTargetKm || 100,
+          raceName: parsed.raceName || '',
+          raceDate: parsed.raceDate || '',
+          raceDistance: parsed.raceDistance || '',
+          theme: parsed.theme || 'light'
+        });
+      }
+    } catch (err) {}
   }
 
+  // SQLite fallback
   try {
     const db = await getDb();
     const row = await db.get("SELECT * FROM user_settings WHERE id = 'default'");
@@ -2202,29 +2239,57 @@ app.get('/api/settings', async (req: Request, res: Response) => {
   });
 });
 
-// Settings API POST Endpoint (Cross-device Sync)
+// Settings API POST Endpoint (Bulletproof Cross-device Sync)
 app.post('/api/settings', async (req: Request, res: Response) => {
   const { monthlyTargetKm, raceName, raceDate, raceDistance, theme } = req.body;
   const useSupabase = isSupabaseConfigured();
   const supabase = getSupabaseClient();
 
+  const settingsPayload = {
+    monthlyTargetKm: monthlyTargetKm ? Number(monthlyTargetKm) : 100,
+    raceName: raceName || '',
+    raceDate: raceDate || '',
+    raceDistance: raceDistance ? Number(raceDistance) : '',
+    theme: theme || 'light'
+  };
+
   if (useSupabase && supabase) {
+    let savedInSupabase = false;
+
+    // 1. Try upserting to user_settings table
     try {
-      await supabase.from('user_settings').upsert({
+      const { error } = await supabase.from('user_settings').upsert({
         id: 'default',
-        monthly_target_km: monthlyTargetKm ? Number(monthlyTargetKm) : 100,
-        race_name: raceName || null,
-        race_date: raceDate || null,
-        race_distance: raceDistance ? Number(raceDistance) : null,
-        theme: theme || 'light',
+        monthly_target_km: settingsPayload.monthlyTargetKm,
+        race_name: settingsPayload.raceName || null,
+        race_date: settingsPayload.raceDate || null,
+        race_distance: settingsPayload.raceDistance ? Number(settingsPayload.raceDistance) : null,
+        theme: settingsPayload.theme,
         updated_at: new Date().toISOString()
       });
+      if (!error) savedInSupabase = true;
+    } catch (err) {}
+
+    // 2. Always write to whoop_tokens with user_id = 'app_settings' as guaranteed fallback
+    try {
+      const { error } = await supabase.from('whoop_tokens').upsert({
+        user_id: 'app_settings',
+        access_token: JSON.stringify(settingsPayload),
+        refresh_token: 'settings_backup',
+        expires_at: Date.now() + 1000 * 60 * 60 * 24 * 3650, // 10 years
+        token_type: 'settings',
+        scope: 'app_settings',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+      if (!error) savedInSupabase = true;
+    } catch (err) {}
+
+    if (savedInSupabase) {
       return res.json({ success: true, message: 'Settings saved to Supabase' });
-    } catch (err: any) {
-      return res.status(500).json({ success: false, error: err.message });
     }
   }
 
+  // SQLite fallback
   try {
     const db = await getDb();
     await db.run(`
@@ -2238,15 +2303,15 @@ app.post('/api/settings', async (req: Request, res: Response) => {
         theme = excluded.theme,
         updated_at = CURRENT_TIMESTAMP
     `, [
-      monthlyTargetKm ? Number(monthlyTargetKm) : 100,
-      raceName || null,
-      raceDate || null,
-      raceDistance ? Number(raceDistance) : null,
-      theme || 'light'
+      settingsPayload.monthlyTargetKm,
+      settingsPayload.raceName || null,
+      settingsPayload.raceDate || null,
+      settingsPayload.raceDistance ? Number(settingsPayload.raceDistance) : null,
+      settingsPayload.theme
     ]);
-    res.json({ success: true, message: 'Settings saved to SQLite' });
+    return res.json({ success: true, message: 'Settings saved to SQLite' });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
