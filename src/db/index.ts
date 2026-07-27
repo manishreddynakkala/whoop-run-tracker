@@ -1,39 +1,53 @@
-import sqlite3 from 'sqlite3';
-import { open, Database } from 'sqlite';
 import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
+import { isSupabaseConfigured } from './supabase.js';
 
 dotenv.config();
 
-const dbPath = process.env.DATABASE_PATH || './data/whoop_tracker.db';
+let dbInstance: any = null;
 
-// Ensure data directory exists
-const dataDir = path.dirname(path.resolve(dbPath));
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
-
-let dbInstance: Database | null = null;
-
-export async function getDb(): Promise<Database> {
+export async function getDb(): Promise<any> {
   if (dbInstance) {
     return dbInstance;
   }
 
-  dbInstance = await open({
-    filename: path.resolve(dbPath),
-    driver: sqlite3.Database,
-  });
+  // If running on Vercel or Supabase is configured, avoid sqlite file operations
+  if (isSupabaseConfigured()) {
+    throw new Error('Supabase is configured as primary database');
+  }
 
-  await initSchema(dbInstance);
-  return dbInstance;
+  try {
+    const sqlite3 = (await import('sqlite3')).default;
+    const { open } = await import('sqlite');
+
+    const dbPath = process.env.DATABASE_PATH || (process.env.VERCEL ? '/tmp/whoop_tracker.db' : './data/whoop_tracker.db');
+    const dataDir = path.dirname(path.resolve(dbPath));
+
+    if (!fs.existsSync(dataDir)) {
+      try {
+        fs.mkdirSync(dataDir, { recursive: true });
+      } catch (err) {}
+    }
+
+    dbInstance = await open({
+      filename: path.resolve(dbPath),
+      driver: sqlite3.Database,
+    });
+
+    await initSchema(dbInstance);
+    return dbInstance;
+  } catch (error: any) {
+    console.error('Failed to initialize SQLite:', error.message);
+    throw error;
+  }
 }
 
-async function initSchema(db: Database) {
-  // Enable foreign keys and WAL mode for better concurrency
-  await db.exec('PRAGMA foreign_keys = ON;');
-  await db.exec('PRAGMA journal_mode = WAL;');
+async function initSchema(db: any) {
+  try {
+    await db.exec('PRAGMA foreign_keys = ON;');
+    await db.exec('PRAGMA journal_mode = WAL;');
+  } catch (e) {}
 
   // Tokens table
   await db.exec(`
@@ -42,7 +56,7 @@ async function initSchema(db: Database) {
       user_id TEXT UNIQUE,
       access_token TEXT NOT NULL,
       refresh_token TEXT NOT NULL,
-      expires_at INTEGER NOT NULL, -- Unix timestamp in ms
+      expires_at INTEGER NOT NULL,
       token_type TEXT DEFAULT 'bearer',
       scope TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -53,11 +67,11 @@ async function initSchema(db: Database) {
   // Workouts table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS whoop_workouts (
-      id TEXT PRIMARY KEY, -- WHOOP Workout UUID
+      id TEXT PRIMARY KEY,
       user_id TEXT,
       sport_id INTEGER,
       sport_name TEXT,
-      is_running INTEGER DEFAULT 0, -- 1 if running activity, 0 otherwise
+      is_running INTEGER DEFAULT 0,
       score_state TEXT,
       start_time TEXT NOT NULL,
       end_time TEXT NOT NULL,
@@ -83,7 +97,7 @@ async function initSchema(db: Database) {
     );
   `);
 
-  // Indexes for fast running metrics queries
+  // Indexes
   await db.exec(`
     CREATE INDEX IF NOT EXISTS idx_workouts_sport ON whoop_workouts(sport_id);
     CREATE INDEX IF NOT EXISTS idx_workouts_is_running ON whoop_workouts(is_running);

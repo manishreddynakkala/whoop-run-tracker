@@ -28,8 +28,10 @@ app.get('/', async (req: Request, res: Response) => {
   let token: any = null;
 
   if (useSupabase && supabase) {
-    const tokenRes = await supabase.from('whoop_tokens').select('*').maybeSingle();
-    token = tokenRes.data;
+    try {
+      const tokenRes = await supabase.from('whoop_tokens').select('*').maybeSingle();
+      token = tokenRes.data;
+    } catch (err) {}
   } else {
     try {
       const db = await getDb();
@@ -1444,8 +1446,10 @@ app.get('/api/status', async (req: Request, res: Response) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Run Tracker Hub running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Run Tracker Hub running on http://localhost:${PORT}`);
+  });
+}
 
 export default app;
