@@ -97,8 +97,8 @@ app.get('/', async (req: Request, res: Response) => {
       justify-content: space-between;
       align-items: center;
       gap: 16px;
-      margin-bottom: 2rem;
-      padding-bottom: 1.5rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.25rem;
       border-bottom: 1px solid var(--card-border);
     }
 
@@ -197,6 +197,48 @@ app.get('/', async (req: Request, res: Response) => {
 
     .btn-secondary:hover {
       background: rgba(255, 255, 255, 0.14);
+    }
+
+    /* Tab Navigation Bar */
+    .tab-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1.75rem;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 0.75rem;
+    }
+
+    .tab-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      color: var(--text-gray);
+      padding: 11px 22px;
+      border-radius: 14px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .tab-btn:hover {
+      background: rgba(255, 255, 255, 0.09);
+      color: var(--text-white);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--theme-blue), var(--theme-blue-deep));
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 20px var(--theme-blue-glow);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
     }
 
     /* Date Period Filter Bar */
@@ -711,183 +753,198 @@ app.get('/', async (req: Request, res: Response) => {
       </div>
     </header>
 
-    <!-- Date Period Filter Controls -->
-    <div class="filter-bar">
-      <div class="filter-title">
-        Select Period:
-      </div>
-      <div class="preset-group">
-        <button class="preset-btn" onclick="selectPreset('7d', this)">7 Days</button>
-        <button class="preset-btn" onclick="selectPreset('30d', this)">30 Days</button>
-        <button class="preset-btn" onclick="selectPreset('month', this)">This Month</button>
-        <button class="preset-btn active" onclick="selectPreset('all', this)">All Time</button>
-      </div>
-      <div class="date-inputs">
-        <input type="date" id="startDate" onchange="customDateChanged()" />
-        <span style="font-size:0.8rem; color:var(--text-dim)">to</span>
-        <input type="date" id="endDate" onchange="customDateChanged()" />
-      </div>
+    <!-- Tab Bar Navigation -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('overviewTab', this)">Overview</button>
+      <button class="tab-btn" onclick="switchTab('analyticsTab', this)">Analytics</button>
+      <button class="tab-btn" onclick="switchTab('historyTab', this)">History</button>
     </div>
 
-    <!-- Automated Performance Insights Banner -->
-    <div class="insights-card">
-      <div class="insights-header">Performance Trend Insights</div>
-      <div class="insights-text" id="insightsContent">Analyzing your recent running activities...</div>
-    </div>
+    <!-- TAB 1: OVERVIEW & RECORDS -->
+    <div class="tab-content active" id="overviewTab">
+      <!-- Automated Performance Insights Banner -->
+      <div class="insights-card">
+        <div class="insights-header">Performance Trend Insights</div>
+        <div class="insights-text" id="insightsContent">Analyzing your recent running activities...</div>
+      </div>
 
-    <!-- Monthly Goal Tracker -->
-    <div class="goal-card">
-      <div class="goal-header">
-        <div class="goal-title">Monthly Target Goal (100 km)</div>
-        <div class="goal-stats" id="goalPercentage">0% Completed</div>
-      </div>
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" id="goalProgressBar" style="width: 0%"></div>
-      </div>
-      <div class="goal-footer">
-        <span id="goalProgressSubtext">0.00 km / 100.00 km completed</span>
-        <span id="goalRemainingSubtext">100.00 km remaining this month</span>
-      </div>
-    </div>
-
-    <!-- Personal Records (PRs) Section -->
-    <div class="prs-section">
-      <div class="prs-title">Personal Records & Highlights</div>
-      <div class="prs-grid">
-        <div class="pr-card">
-          <div class="pr-label">Longest Run</div>
-          <div class="pr-value" id="prLongestRun">-</div>
-          <div class="pr-date" id="prLongestDate">All Time</div>
+      <!-- Monthly Goal Tracker -->
+      <div class="goal-card">
+        <div class="goal-header">
+          <div class="goal-title">Monthly Target Goal (100 km)</div>
+          <div class="goal-stats" id="goalPercentage">0% Completed</div>
         </div>
-        <div class="pr-card">
-          <div class="pr-label">Fastest Pace</div>
-          <div class="pr-value" id="prFastestPace">-</div>
-          <div class="pr-date" id="prFastestDate">All Time</div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="goalProgressBar" style="width: 0%"></div>
         </div>
-        <div class="pr-card">
-          <div class="pr-label">Highest Strain</div>
-          <div class="pr-value" id="prHighestStrain">-</div>
-          <div class="pr-date" id="prStrainDate">WHOOP 0-21</div>
-        </div>
-        <div class="pr-card">
-          <div class="pr-label">Max Calorie Burn</div>
-          <div class="pr-value" id="prMaxCalories">-</div>
-          <div class="pr-date" id="prCaloriesDate">Single Session</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Summary Metrics Grid -->
-    <div class="grid">
-      <div class="card">
-        <div class="card-title">Run Count</div>
-        <div class="card-value" id="kpiRunsCount">-</div>
-        <div class="card-subtitle">Sessions</div>
-      </div>
-      <div class="card">
-        <div class="card-title">Total Distance</div>
-        <div class="card-value" id="kpiDistance">-</div>
-        <div class="card-subtitle">Kilometers</div>
-      </div>
-      <div class="card">
-        <div class="card-title">Avg Pace</div>
-        <div class="card-value" id="kpiAvgPace">-</div>
-        <div class="card-subtitle">min / km</div>
-      </div>
-      <div class="card">
-        <div class="card-title">Total Duration</div>
-        <div class="card-value" id="kpiDuration">-</div>
-        <div class="card-subtitle">Hours & Mins</div>
-      </div>
-      <div class="card">
-        <div class="card-title">Total Calories</div>
-        <div class="card-value" id="kpiCalories">-</div>
-        <div class="card-subtitle">kcal burned</div>
-      </div>
-      <div class="card">
-        <div class="card-title">Avg Strain</div>
-        <div class="card-value" id="kpiAvgStrain">-</div>
-        <div class="card-subtitle">WHOOP 0-21</div>
-      </div>
-      <div class="card">
-        <div class="card-title">Avg / Max HR</div>
-        <div class="card-value" id="kpiAvgHr" style="font-size:1.45rem;">-</div>
-        <div class="card-subtitle">BPM</div>
-      </div>
-    </div>
-
-    <!-- Interactive Performance Analytics Charts -->
-    <div class="charts-grid">
-      <!-- Chart 1: Distance & Pace Trend -->
-      <div class="chart-card">
-        <div class="chart-header">
-          <div class="chart-title">Distance & Pace Progression</div>
-          <button class="chart-zoom-btn" onclick="openZoomModal('chartDistancePace', 'Distance & Pace Progression')">Expand / Zoom</button>
-        </div>
-        <div class="chart-body">
-          <canvas id="chartDistancePace"></canvas>
+        <div class="goal-footer">
+          <span id="goalProgressSubtext">0.00 km / 100.00 km completed</span>
+          <span id="goalRemainingSubtext">100.00 km remaining this month</span>
         </div>
       </div>
 
-      <!-- Chart 2: Heart Rate Zone Distribution -->
-      <div class="chart-card">
-        <div class="chart-header">
-          <div class="chart-title">Heart Rate Zone Breakdown (Zone 1-5)</div>
-          <button class="chart-zoom-btn" onclick="openZoomModal('chartHrZones', 'Heart Rate Zone Breakdown')">Expand / Zoom</button>
-        </div>
-        <div class="chart-body">
-          <canvas id="chartHrZones"></canvas>
+      <!-- Personal Records (PRs) Section -->
+      <div class="prs-section">
+        <div class="prs-title">Personal Records & Highlights</div>
+        <div class="prs-grid">
+          <div class="pr-card">
+            <div class="pr-label">Longest Run</div>
+            <div class="pr-value" id="prLongestRun">-</div>
+            <div class="pr-date" id="prLongestDate">All Time</div>
+          </div>
+          <div class="pr-card">
+            <div class="pr-label">Fastest Pace</div>
+            <div class="pr-value" id="prFastestPace">-</div>
+            <div class="pr-date" id="prFastestDate">All Time</div>
+          </div>
+          <div class="pr-card">
+            <div class="pr-label">Highest Strain</div>
+            <div class="pr-value" id="prHighestStrain">-</div>
+            <div class="pr-date" id="prStrainDate">WHOOP 0-21</div>
+          </div>
+          <div class="pr-card">
+            <div class="pr-label">Max Calorie Burn</div>
+            <div class="pr-value" id="prMaxCalories">-</div>
+            <div class="pr-date" id="prCaloriesDate">Single Session</div>
+          </div>
         </div>
       </div>
 
-      <!-- Chart 3: Strain vs Heart Rate Efficiency -->
-      <div class="chart-card">
-        <div class="chart-header">
-          <div class="chart-title">Strain vs Heart Rate Efficiency</div>
-          <button class="chart-zoom-btn" onclick="openZoomModal('chartStrainHr', 'Strain vs Heart Rate Efficiency')">Expand / Zoom</button>
+      <!-- Summary Metrics Grid -->
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">Run Count</div>
+          <div class="card-value" id="kpiRunsCount">-</div>
+          <div class="card-subtitle">Sessions</div>
         </div>
-        <div class="chart-body">
-          <canvas id="chartStrainHr"></canvas>
+        <div class="card">
+          <div class="card-title">Total Distance</div>
+          <div class="card-value" id="kpiDistance">-</div>
+          <div class="card-subtitle">Kilometers</div>
         </div>
-      </div>
-
-      <!-- Chart 4: Weekly Mileage Progression -->
-      <div class="chart-card">
-        <div class="chart-header">
-          <div class="chart-title">Weekly Mileage Progression</div>
-          <button class="chart-zoom-btn" onclick="openZoomModal('chartWeeklyMileage', 'Weekly Mileage Progression')">Expand / Zoom</button>
+        <div class="card">
+          <div class="card-title">Avg Pace</div>
+          <div class="card-value" id="kpiAvgPace">-</div>
+          <div class="card-subtitle">min / km</div>
         </div>
-        <div class="chart-body">
-          <canvas id="chartWeeklyMileage"></canvas>
+        <div class="card">
+          <div class="card-title">Total Duration</div>
+          <div class="card-value" id="kpiDuration">-</div>
+          <div class="card-subtitle">Hours & Mins</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Total Calories</div>
+          <div class="card-value" id="kpiCalories">-</div>
+          <div class="card-subtitle">kcal burned</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Avg Strain</div>
+          <div class="card-value" id="kpiAvgStrain">-</div>
+          <div class="card-subtitle">WHOOP 0-21</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Avg / Max HR</div>
+          <div class="card-value" id="kpiAvgHr" style="font-size:1.45rem;">-</div>
+          <div class="card-subtitle">BPM</div>
         </div>
       </div>
     </div>
 
-    <!-- Running Activities Table -->
-    <div class="section-header">
-      <div class="section-title">
-        Running Performance History <span id="periodLabel" style="font-size:0.85rem; font-weight:500; color:var(--text-dim)">(All Time)</span>
+    <!-- TAB 2: ANALYTICS (GRAPHICAL VISUALS) -->
+    <div class="tab-content" id="analyticsTab">
+      <div class="charts-grid">
+        <!-- Chart 1: Distance & Pace Trend -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Distance & Pace Progression</div>
+            <button class="chart-zoom-btn" onclick="openZoomModal('chartDistancePace', 'Distance & Pace Progression')">Expand / Zoom</button>
+          </div>
+          <div class="chart-body">
+            <canvas id="chartDistancePace"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Heart Rate Zone Distribution -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Heart Rate Zone Breakdown (Zone 1-5)</div>
+            <button class="chart-zoom-btn" onclick="openZoomModal('chartHrZones', 'Heart Rate Zone Breakdown')">Expand / Zoom</button>
+          </div>
+          <div class="chart-body">
+            <canvas id="chartHrZones"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 3: Strain vs Heart Rate Efficiency -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Strain vs Heart Rate Efficiency</div>
+            <button class="chart-zoom-btn" onclick="openZoomModal('chartStrainHr', 'Strain vs Heart Rate Efficiency')">Expand / Zoom</button>
+          </div>
+          <div class="chart-body">
+            <canvas id="chartStrainHr"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 4: Weekly Mileage Progression -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Weekly Mileage Progression</div>
+            <button class="chart-zoom-btn" onclick="openZoomModal('chartWeeklyMileage', 'Weekly Mileage Progression')">Expand / Zoom</button>
+          </div>
+          <div class="chart-body">
+            <canvas id="chartWeeklyMileage"></canvas>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Date & Time</th>
-            <th>Sport</th>
-            <th>Distance (km)</th>
-            <th>Pace (min/km)</th>
-            <th>Duration</th>
-            <th>Strain</th>
-            <th>Avg / Max HR</th>
-            <th>Calories</th>
-          </tr>
-        </thead>
-        <tbody id="runsTableBody">
-          <tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-dim)">Loading running activities...</td></tr>
-        </tbody>
-      </table>
+    <!-- TAB 3: HISTORY (RUNNING PERFORMANCE HISTORY TABLE) -->
+    <div class="tab-content" id="historyTab">
+      <!-- Date Period Filter Controls -->
+      <div class="filter-bar">
+        <div class="filter-title">
+          Select Period:
+        </div>
+        <div class="preset-group">
+          <button class="preset-btn" onclick="selectPreset('7d', this)">7 Days</button>
+          <button class="preset-btn" onclick="selectPreset('30d', this)">30 Days</button>
+          <button class="preset-btn" onclick="selectPreset('month', this)">This Month</button>
+          <button class="preset-btn active" onclick="selectPreset('all', this)">All Time</button>
+        </div>
+        <div class="date-inputs">
+          <input type="date" id="startDate" onchange="customDateChanged()" />
+          <span style="font-size:0.8rem; color:var(--text-dim)">to</span>
+          <input type="date" id="endDate" onchange="customDateChanged()" />
+        </div>
+      </div>
+
+      <!-- Running Activities Table -->
+      <div class="section-header">
+        <div class="section-title">
+          Running Performance History <span id="periodLabel" style="font-size:0.85rem; font-weight:500; color:var(--text-dim)">(All Time)</span>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Sport</th>
+              <th>Distance (km)</th>
+              <th>Pace (min/km)</th>
+              <th>Duration</th>
+              <th>Strain</th>
+              <th>Avg / Max HR</th>
+              <th>Calories</th>
+            </tr>
+          </thead>
+          <tbody id="runsTableBody">
+            <tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-dim)">Loading running activities...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -920,6 +977,25 @@ app.get('/', async (req: Request, res: Response) => {
 
     Chart.defaults.color = '#94a3b8';
     Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+
+    function switchTab(tabId, btnEl) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      if (btnEl) btnEl.classList.add('active');
+      const targetContent = document.getElementById(tabId);
+      if (targetContent) targetContent.classList.add('active');
+
+      // Trigger chart resize if Analytics tab opened
+      if (tabId === 'analyticsTab') {
+        setTimeout(() => {
+          if (chartInstanceDistancePace) chartInstanceDistancePace.resize();
+          if (chartInstanceHrZones) chartInstanceHrZones.resize();
+          if (chartInstanceStrainHr) chartInstanceStrainHr.resize();
+          if (chartInstanceWeeklyMileage) chartInstanceWeeklyMileage.resize();
+        }, 50);
+      }
+    }
 
     function calcPaceDec(durationMs, distKm) {
       if (!distKm || distKm <= 0 || !durationMs) return null;
