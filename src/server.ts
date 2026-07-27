@@ -49,6 +49,7 @@ app.get('/', async (req: Request, res: Response) => {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --bg-black: #050507;
@@ -181,7 +182,7 @@ app.get('/', async (req: Request, res: Response) => {
       text-transform: uppercase;
       cursor: pointer;
       text-decoration: none;
-      transition: all 0.25 ease;
+      transition: all 0.25s ease;
       border: none;
     }
 
@@ -279,7 +280,7 @@ app.get('/', async (req: Request, res: Response) => {
     /* Metric Cards Grid */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 1.1rem;
       margin-bottom: 2rem;
     }
@@ -321,6 +322,54 @@ app.get('/', async (req: Request, res: Response) => {
       margin-top: 0.4rem;
     }
 
+    /* Charts Grid Section */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.25rem;
+    }
+
+    @media (max-width: 600px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.2rem;
+    }
+
+    .chart-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-white);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-body {
+      position: relative;
+      width: 100%;
+      height: 280px;
+    }
+
     /* Running Activities Table Section */
     .section-header {
       display: flex;
@@ -346,6 +395,7 @@ app.get('/', async (req: Request, res: Response) => {
       border-radius: 20px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      margin-bottom: 3rem;
     }
 
     table {
@@ -457,7 +507,7 @@ app.get('/', async (req: Request, res: Response) => {
       </div>
     </div>
 
-    <!-- Summary Metrics for Selected Period -->
+    <!-- Summary Metrics Grid -->
     <div class="grid">
       <div class="card">
         <div class="card-title">Run Count</div>
@@ -496,6 +546,49 @@ app.get('/', async (req: Request, res: Response) => {
       </div>
     </div>
 
+    <!-- Interactive Performance Analytics Charts -->
+    <div class="charts-grid">
+      <!-- Chart 1: Distance & Pace Trend -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">📈 Distance & Pace Progression</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chartDistancePace"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Heart Rate Zone Distribution -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">❤️ Heart Rate Zone Breakdown (Zone 1-5)</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chartHrZones"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 3: Strain vs Heart Rate Efficiency -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">⚡ Strain vs Heart Rate Efficiency</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chartStrainHr"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 4: Weekly Mileage Progression -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">📊 Weekly Mileage Progression</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chartWeeklyMileage"></canvas>
+        </div>
+      </div>
+    </div>
+
     <!-- Running Activities Table -->
     <div class="section-header">
       <div class="section-title">
@@ -527,12 +620,37 @@ app.get('/', async (req: Request, res: Response) => {
   <script>
     let currentStartDate = null;
     let currentEndDate = null;
+    let chartInstanceDistancePace = null;
+    let chartInstanceHrZones = null;
+    let chartInstanceStrainHr = null;
+    let chartInstanceWeeklyMileage = null;
+
+    Chart.defaults.color = '#a1a1aa';
+    Chart.defaults.font.family = "'Outfit', sans-serif";
+
+    function calcPaceDec(durationMs, distKm) {
+      if (!distKm || distKm <= 0 || !durationMs) return null;
+      const totalMins = durationMs / 60000;
+      const pace = totalMins / distKm;
+      return (pace > 30 || pace < 2) ? null : pace;
+    }
 
     function calcPaceString(durationMs, distKm) {
-      if (!distKm || distKm <= 0 || !durationMs) return 'N/A';
-      const totalMins = durationMs / 60000;
-      const paceDec = totalMins / distKm;
-      if (paceDec > 30 || paceDec < 2) return 'N/A';
+      const paceDec = calcPaceDec(durationMs, distKm);
+      if (!paceDec) return 'N/A';
+      const mins = Math.floor(paceDec);
+      let secs = Math.round((paceDec - mins) * 60);
+      let finalMins = mins;
+      if (secs === 60) {
+        secs = 0;
+        finalMins += 1;
+      }
+      const secsStr = secs < 10 ? '0' + secs : secs;
+      return \`\${finalMins}:\${secsStr} /km\`;
+    }
+
+    function formatPaceDecToString(paceDec) {
+      if (!paceDec) return 'N/A';
       const mins = Math.floor(paceDec);
       let secs = Math.round((paceDec - mins) * 60);
       let finalMins = mins;
@@ -566,7 +684,7 @@ app.get('/', async (req: Request, res: Response) => {
         const data = await res.json();
         const runs = data.runs || [];
 
-        // Update KPI Cards using Kilometers (km)
+        // Update KPI Cards
         let totalDistKm = 0;
         let totalDurationMs = 0;
         let totalPaceDistKm = 0;
@@ -619,6 +737,7 @@ app.get('/', async (req: Request, res: Response) => {
         // Render Table Rows
         if (runs.length === 0) {
           tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-dim)">No running activities found for the selected date period.</td></tr>';
+          renderCharts([]);
           return;
         }
 
@@ -657,9 +776,250 @@ app.get('/', async (req: Request, res: Response) => {
           \`;
         }).join('');
 
+        renderCharts(runs);
+
       } catch (err) {
         tbody.innerHTML = \`<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--whoop-red)">Error loading data: \${err.message}</td></tr>\`;
       }
+    }
+
+    function renderCharts(runs) {
+      // Sort runs chronologically (oldest to newest) for timeline charts
+      const chronoRuns = [...runs].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+      const labels = chronoRuns.map(r => {
+        const d = new Date(r.start_time);
+        return (d.getMonth() + 1) + '/' + d.getDate();
+      });
+
+      const distances = chronoRuns.map(r => {
+        if (r.distance_km) return Number(r.distance_km);
+        if (r.distance_meters) return Number(r.distance_meters) / 1000;
+        return 0;
+      });
+
+      const paces = chronoRuns.map(r => {
+        let dist = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters)/1000 : 0);
+        return calcPaceDec(r.duration_ms, dist);
+      });
+
+      const strains = chronoRuns.map(r => r.strain ? Number(r.strain) : null);
+      const avgHrs = chronoRuns.map(r => r.average_heart_rate ? Number(r.average_heart_rate) : null);
+
+      // --- Chart 1: Distance & Pace Progression ---
+      if (chartInstanceDistancePace) chartInstanceDistancePace.destroy();
+      const ctx1 = document.getElementById('chartDistancePace').getContext('2d');
+      chartInstanceDistancePace = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Distance (km)',
+              data: distances,
+              backgroundColor: 'rgba(255, 0, 51, 0.45)',
+              borderColor: '#ff0033',
+              borderWidth: 2,
+              borderRadius: 6,
+              yAxisID: 'yDist',
+            },
+            {
+              label: 'Pace (min/km)',
+              data: paces,
+              type: 'line',
+              borderColor: '#ec4899',
+              backgroundColor: '#ec4899',
+              borderWidth: 3,
+              tension: 0.3,
+              pointRadius: 4,
+              yAxisID: 'yPace',
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  if (context.dataset.yAxisID === 'yPace') {
+                    return 'Pace: ' + formatPaceDecToString(context.raw);
+                  }
+                  return 'Distance: ' + Number(context.raw).toFixed(2) + ' km';
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.05)' } },
+            yDist: {
+              type: 'linear',
+              position: 'left',
+              title: { display: true, text: 'Distance (km)', color: '#ff0033' },
+              grid: { color: 'rgba(255,255,255,0.05)' }
+            },
+            yPace: {
+              type: 'linear',
+              position: 'right',
+              reverse: true, // Lower pace min/km is faster!
+              title: { display: true, text: 'Pace (min/km - Faster ↑)', color: '#ec4899' },
+              grid: { drawOnChartArea: false },
+              ticks: {
+                callback: function(val) {
+                  return formatPaceDecToString(val);
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // --- Chart 2: Heart Rate Zone Breakdown ---
+      let z1 = 0, z2 = 0, z3 = 0, z4 = 0, z5 = 0;
+      runs.forEach(r => {
+        const zd = (r.raw_json && r.raw_json.score && r.raw_json.score.zone_durations) || {};
+        z1 += Math.round((zd.zone_one_milli || r.zone_one_ms || 0) / 60000);
+        z2 += Math.round((zd.zone_two_milli || r.zone_two_ms || 0) / 60000);
+        z3 += Math.round((zd.zone_three_milli || r.zone_three_ms || 0) / 60000);
+        z4 += Math.round((zd.zone_four_milli || r.zone_four_ms || 0) / 60000);
+        z5 += Math.round((zd.zone_five_milli || r.zone_five_ms || 0) / 60000);
+      });
+
+      if (chartInstanceHrZones) chartInstanceHrZones.destroy();
+      const ctx2 = document.getElementById('chartHrZones').getContext('2d');
+      chartInstanceHrZones = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: ['Zone 1 (Recovery)', 'Zone 2 (Aerobic Base)', 'Zone 3 (Tempo)', 'Zone 4 (Threshold)', 'Zone 5 (Anaerobic Peak)'],
+          datasets: [{
+            data: [z1, z2, z3, z4, z5],
+            backgroundColor: ['#94a3b8', '#00e676', '#f59e0b', '#ff7e36', '#ff0033'],
+            borderWidth: 0,
+            hoverOffset: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'right', labels: { boxWidth: 14, font: { size: 11 } } },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return ' ' + context.label + ': ' + context.raw + ' mins';
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // --- Chart 3: Strain vs Heart Rate Efficiency ---
+      if (chartInstanceStrainHr) chartInstanceStrainHr.destroy();
+      const ctx3 = document.getElementById('chartStrainHr').getContext('2d');
+      chartInstanceStrainHr = new Chart(ctx3, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'WHOOP Strain (0-21)',
+              data: strains,
+              borderColor: '#ff0033',
+              backgroundColor: 'rgba(255, 0, 51, 0.1)',
+              borderWidth: 3,
+              tension: 0.3,
+              fill: true,
+              yAxisID: 'yStrain'
+            },
+            {
+              label: 'Avg Heart Rate (BPM)',
+              data: avgHrs,
+              borderColor: '#ff7e36',
+              borderWidth: 2.5,
+              tension: 0.3,
+              pointRadius: 4,
+              yAxisID: 'yHr'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.05)' } },
+            yStrain: {
+              type: 'linear',
+              position: 'left',
+              min: 0,
+              max: 21,
+              title: { display: true, text: 'Strain (0-21)', color: '#ff0033' },
+              grid: { color: 'rgba(255,255,255,0.05)' }
+            },
+            yHr: {
+              type: 'linear',
+              position: 'right',
+              title: { display: true, text: 'Avg Heart Rate (BPM)', color: '#ff7e36' },
+              grid: { drawOnChartArea: false }
+            }
+          }
+        }
+      });
+
+      // --- Chart 4: Weekly Mileage Progression ---
+      const weeklyMap = {};
+      chronoRuns.forEach(r => {
+        const d = new Date(r.start_time);
+        // Get start of week (Sunday or Monday)
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday as start
+        const monday = new Date(d.setDate(diff));
+        const weekKey = (monday.getMonth() + 1) + '/' + monday.getDate();
+
+        let dist = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters)/1000 : 0);
+        weeklyMap[weekKey] = (weeklyMap[weekKey] || 0) + dist;
+      });
+
+      const weekLabels = Object.keys(weeklyMap);
+      const weekDistances = Object.values(weeklyMap);
+
+      if (chartInstanceWeeklyMileage) chartInstanceWeeklyMileage.destroy();
+      const ctx4 = document.getElementById('chartWeeklyMileage').getContext('2d');
+      chartInstanceWeeklyMileage = new Chart(ctx4, {
+        type: 'bar',
+        data: {
+          labels: weekLabels.map(l => 'Wk of ' + l),
+          datasets: [{
+            label: 'Total Distance (km)',
+            data: weekDistances,
+            backgroundColor: 'rgba(0, 242, 254, 0.45)',
+            borderColor: '#00f2fe',
+            borderWidth: 2,
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return ' Total Distance: ' + Number(context.raw).toFixed(2) + ' km';
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: {
+              title: { display: true, text: 'Weekly Distance (km)', color: '#00f2fe' },
+              grid: { color: 'rgba(255,255,255,0.05)' }
+            }
+          }
+        }
+      });
     }
 
     function selectPreset(type, btnEl) {
