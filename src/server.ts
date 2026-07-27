@@ -560,7 +560,7 @@ app.get('/', async (req: Request, res: Response) => {
       font-size: 0.7rem;
       font-weight: 700;
       color: var(--text-muted);
-      margin-top: 4px;
+      margin-top: 6px;
     }
 
     .ai-refresh-btn {
@@ -1112,7 +1112,7 @@ app.get('/', async (req: Request, res: Response) => {
           <button onclick="fetchAIInsights(true)" class="ai-refresh-btn" id="aiRefreshBtn">Refresh AI Insights</button>
         </div>
         <div class="insights-text" id="insightsContent">Analyzing your latest 10 running activities with AI...</div>
-        <div class="ai-source-tag" id="aiSourceTag">Engine: Powered by Google Gemini AI</div>
+        <div class="ai-source-tag" id="aiSourceTag">Engine: Google Gemini AI</div>
       </div>
 
       <!-- 2. Current Calendar Month Target Goal -->
@@ -1340,6 +1340,16 @@ app.get('/', async (req: Request, res: Response) => {
       </div>
       
       <div class="settings-grid">
+        <!-- 0. Google Gemini AI API Key Card -->
+        <div class="settings-card">
+          <div class="settings-title">Google Gemini AI Key</div>
+          <div class="settings-desc">Enter your Google Gemini API key to activate real-time LLM endurance coaching insights across all your devices.</div>
+          <div class="settings-form-group">
+            <input type="password" id="geminiApiKeyInput" class="settings-input" style="width: 280px;" placeholder="AIzaSy..." />
+            <button onclick="saveGeminiApiKeySetting()" class="strava-btn strava-btn-primary" id="saveAiKeyBtn">Save Key</button>
+          </div>
+        </div>
+
         <!-- 1. Upcoming Target Race Settings Card -->
         <div class="settings-card">
           <div class="settings-title">Next Upcoming Race</div>
@@ -1421,6 +1431,7 @@ app.get('/', async (req: Request, res: Response) => {
     let allRunsCache = [];
     let monthlyTargetKmSetting = 100;
     let upcomingRaceSetting = null;
+    let userGeminiApiKeySetting = '';
     let raceCountdownTimer = null;
     let currentThemeSetting = 'light';
     let chartInstanceDistancePace = null;
@@ -1474,7 +1485,10 @@ app.get('/', async (req: Request, res: Response) => {
         const res = await fetch('/api/insights', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ runs: allRunsCache })
+          body: JSON.stringify({ 
+            runs: allRunsCache,
+            geminiApiKey: userGeminiApiKeySetting 
+          })
         });
         const data = await res.json();
         if (data && data.insight) {
@@ -1508,6 +1522,12 @@ app.get('/', async (req: Request, res: Response) => {
       }
       document.getElementById('monthlyGoalInput').value = monthlyTargetKmSetting;
 
+      const savedAiKey = localStorage.getItem('userGeminiApiKey');
+      if (savedAiKey) {
+        userGeminiApiKeySetting = savedAiKey;
+        document.getElementById('geminiApiKeyInput').value = savedAiKey;
+      }
+
       const savedRace = localStorage.getItem('upcomingRace');
       if (savedRace) {
         try {
@@ -1534,6 +1554,11 @@ app.get('/', async (req: Request, res: Response) => {
             monthlyTargetKmSetting = Number(data.monthlyTargetKm);
             document.getElementById('monthlyGoalInput').value = monthlyTargetKmSetting;
             localStorage.setItem('monthlyTargetKm', monthlyTargetKmSetting);
+          }
+          if (data.geminiApiKey) {
+            userGeminiApiKeySetting = data.geminiApiKey;
+            document.getElementById('geminiApiKeyInput').value = data.geminiApiKey;
+            localStorage.setItem('userGeminiApiKey', data.geminiApiKey);
           }
           if (data.raceName || data.raceDate) {
             upcomingRaceSetting = {
@@ -1570,12 +1595,28 @@ app.get('/', async (req: Request, res: Response) => {
             raceName: upcomingRaceSetting ? upcomingRaceSetting.name : '',
             raceDate: upcomingRaceSetting ? upcomingRaceSetting.date : '',
             raceDistance: upcomingRaceSetting ? upcomingRaceSetting.distance : '',
+            geminiApiKey: userGeminiApiKeySetting,
             theme: currentThemeSetting
           })
         });
       } catch (err) {
         console.error('Failed to sync settings to server:', err);
       }
+    }
+
+    async function saveGeminiApiKeySetting() {
+      const btn = document.getElementById('saveAiKeyBtn');
+      btn.innerText = 'Saving...';
+      btn.disabled = true;
+
+      const keyVal = document.getElementById('geminiApiKeyInput').value.trim();
+      userGeminiApiKeySetting = keyVal;
+      localStorage.setItem('userGeminiApiKey', keyVal);
+      await syncSettingsToServer();
+      btn.innerText = 'Save Key';
+      btn.disabled = false;
+      alert('Google Gemini API Key saved successfully across all devices!');
+      fetchAIInsights(true);
     }
 
     async function saveUpcomingRaceSetting() {
@@ -1826,6 +1867,9 @@ app.get('/', async (req: Request, res: Response) => {
           let distKm = 0;
           if (r.distance_km) distKm = Number(r.distance_km);
           else if (r.distance_meters) distKm = Number(r.distance_meters) / 1000;
+          else if (r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+            distKm = Number(r.raw_json.score.distance_meter) / 1000;
+          }
 
           totalDistKm += distKm;
           if (r.duration_ms) totalDurationMs += Number(r.duration_ms);
@@ -1882,6 +1926,9 @@ app.get('/', async (req: Request, res: Response) => {
           } else if (r.distance_meters) {
             distKmNum = Number(r.distance_meters) / 1000;
             distKmStr = distKmNum.toFixed(2) + ' km';
+          } else if (r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+            distKmNum = Number(r.raw_json.score.distance_meter) / 1000;
+            distKmStr = distKmNum.toFixed(2) + ' km';
           }
 
           const paceStr = calcPaceString(r.duration_ms, distKmNum);
@@ -1932,6 +1979,9 @@ app.get('/', async (req: Request, res: Response) => {
         let distKm = 0;
         if (r.distance_km) distKm = Number(r.distance_km);
         else if (r.distance_meters) distKm = Number(r.distance_meters) / 1000;
+        else if (r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+          distKm = Number(r.raw_json.score.distance_meter) / 1000;
+        }
 
         // Longest Run
         if (distKm > longestRun) {
@@ -2014,6 +2064,9 @@ app.get('/', async (req: Request, res: Response) => {
 
       latest10.forEach(r => {
         let distKm = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters)/1000 : 0);
+        if (distKm === 0 && r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+          distKm = Number(r.raw_json.score.distance_meter) / 1000;
+        }
         totalDistKm += distKm;
         if (distKm > 0.1 && r.duration_ms) {
           totalPaceDistKm += distKm;
@@ -2059,11 +2112,17 @@ app.get('/', async (req: Request, res: Response) => {
       const distances = chronoRuns.map(r => {
         if (r.distance_km) return Number(r.distance_km);
         if (r.distance_meters) return Number(r.distance_meters) / 1000;
+        if (r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+          return Number(r.raw_json.score.distance_meter) / 1000;
+        }
         return 0;
       });
 
       const paces = chronoRuns.map(r => {
         let dist = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters)/1000 : 0);
+        if (dist === 0 && r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+          dist = Number(r.raw_json.score.distance_meter) / 1000;
+        }
         return calcPaceDec(r.duration_ms, dist);
       });
 
@@ -2248,6 +2307,9 @@ app.get('/', async (req: Request, res: Response) => {
         const weekKey = (monday.getMonth() + 1) + '/' + monday.getDate();
 
         let dist = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters)/1000 : 0);
+        if (dist === 0 && r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+          dist = Number(r.raw_json.score.distance_meter) / 1000;
+        }
         weeklyMap[weekKey] = (weeklyMap[weekKey] || 0) + dist;
       });
 
@@ -2432,7 +2494,7 @@ app.get('/', async (req: Request, res: Response) => {
 
 // AI Running Coach Insights API Endpoint
 app.post('/api/insights', async (req: Request, res: Response) => {
-  const { runs } = req.body;
+  const { runs, geminiApiKey: reqKey } = req.body;
   if (!runs || !Array.isArray(runs) || runs.length === 0) {
     return res.json({ insight: 'No running activities available for AI analysis.' });
   }
@@ -2442,7 +2504,23 @@ app.post('/api/insights', async (req: Request, res: Response) => {
     .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
     .slice(0, 10);
 
-  const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  // Check key from Request Body, Environment Variables, or DB User Settings
+  let geminiApiKey = reqKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.WHOOP_GEMINI_KEY || process.env.API_KEY;
+
+  if (!geminiApiKey) {
+    // Try fetching geminiApiKey from Supabase / DB settings
+    const useSupabase = isSupabaseConfigured();
+    const supabase = getSupabaseClient();
+    if (useSupabase && supabase) {
+      try {
+        const { data } = await supabase.from('whoop_tokens').select('*').eq('user_id', 'app_settings').maybeSingle();
+        if (data && data.access_token) {
+          const parsed = JSON.parse(data.access_token);
+          if (parsed.geminiApiKey) geminiApiKey = parsed.geminiApiKey;
+        }
+      } catch (err) {}
+    }
+  }
 
   if (geminiApiKey) {
     try {
@@ -2466,7 +2544,7 @@ app.post('/api/insights', async (req: Request, res: Response) => {
 
         const strain = r.strain ? Number(r.strain).toFixed(1) : 'N/A';
         const hr = r.average_heart_rate || 'N/A';
-        return `Run ${i + 1} (${d}): ${dist > 0 ? dist.toFixed(2) + ' km' : 'Indoor Run'}, Pace: ${paceStr}, WHOOP Strain: ${strain}/21, Avg HR: ${hr} BPM`;
+        return `Run ${i + 1} (${d}): ${dist > 0 ? dist.toFixed(2) + ' km' : 'Session'}, Pace: ${paceStr}, WHOOP Strain: ${strain}/21, Avg HR: ${hr} BPM`;
       }).join('\n');
 
       const prompt = `You are an elite endurance running coach analyzing a runner's latest 10 workouts from their WHOOP telemetry data:\n${summaryText}\n\nProvide a concise, 2-3 sentence personalized coach insight covering:\n1. Performance, pace progression & consistency across these 10 runs.\n2. Cardiovascular response (heart rate efficiency vs WHOOP strain balance).\n3. A specific, actionable coaching tip for their next workouts.\nKeep it inspiring, professional, direct, and tailored strictly to their numbers. Write a single clean paragraph without markdown headers or lists.`;
@@ -2559,6 +2637,7 @@ app.get('/api/settings', async (req: Request, res: Response) => {
           raceName: data.race_name || '',
           raceDate: data.race_date || '',
           raceDistance: data.race_distance || '',
+          geminiApiKey: data.gemini_api_key || '',
           theme: data.theme || 'light'
         });
       }
@@ -2574,6 +2653,7 @@ app.get('/api/settings', async (req: Request, res: Response) => {
           raceName: parsed.raceName || '',
           raceDate: parsed.raceDate || '',
           raceDistance: parsed.raceDistance || '',
+          geminiApiKey: parsed.geminiApiKey || '',
           theme: parsed.theme || 'light'
         });
       }
@@ -2590,6 +2670,7 @@ app.get('/api/settings', async (req: Request, res: Response) => {
         raceName: row.race_name || '',
         raceDate: row.race_date || '',
         raceDistance: row.race_distance || '',
+        geminiApiKey: row.gemini_api_key || '',
         theme: row.theme || 'light'
       });
     }
@@ -2600,13 +2681,14 @@ app.get('/api/settings', async (req: Request, res: Response) => {
     raceName: '',
     raceDate: '',
     raceDistance: '',
+    geminiApiKey: '',
     theme: 'light'
   });
 });
 
 // Settings API POST Endpoint (Bulletproof Cross-device Sync)
 app.post('/api/settings', async (req: Request, res: Response) => {
-  const { monthlyTargetKm, raceName, raceDate, raceDistance, theme } = req.body;
+  const { monthlyTargetKm, raceName, raceDate, raceDistance, geminiApiKey, theme } = req.body;
   const useSupabase = isSupabaseConfigured();
   const supabase = getSupabaseClient();
 
@@ -2615,6 +2697,7 @@ app.post('/api/settings', async (req: Request, res: Response) => {
     raceName: raceName || '',
     raceDate: raceDate || '',
     raceDistance: raceDistance ? Number(raceDistance) : '',
+    geminiApiKey: geminiApiKey || '',
     theme: theme || 'light'
   };
 
@@ -2629,6 +2712,7 @@ app.post('/api/settings', async (req: Request, res: Response) => {
         race_name: settingsPayload.raceName || null,
         race_date: settingsPayload.raceDate || null,
         race_distance: settingsPayload.raceDistance ? Number(settingsPayload.raceDistance) : null,
+        gemini_api_key: settingsPayload.geminiApiKey || null,
         theme: settingsPayload.theme,
         updated_at: new Date().toISOString()
       });
@@ -2658,13 +2742,14 @@ app.post('/api/settings', async (req: Request, res: Response) => {
   try {
     const db = await getDb();
     await db.run(`
-      INSERT INTO user_settings (id, monthly_target_km, race_name, race_date, race_distance, theme, updated_at)
-      VALUES ('default', ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO user_settings (id, monthly_target_km, race_name, race_date, race_distance, gemini_api_key, theme, updated_at)
+      VALUES ('default', ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(id) DO UPDATE SET
         monthly_target_km = excluded.monthly_target_km,
         race_name = excluded.race_name,
         race_date = excluded.race_date,
         race_distance = excluded.race_distance,
+        gemini_api_key = excluded.gemini_api_key,
         theme = excluded.theme,
         updated_at = CURRENT_TIMESTAMP
     `, [
@@ -2672,6 +2757,7 @@ app.post('/api/settings', async (req: Request, res: Response) => {
       settingsPayload.raceName || null,
       settingsPayload.raceDate || null,
       settingsPayload.raceDistance ? Number(settingsPayload.raceDistance) : null,
+      settingsPayload.geminiApiKey || null,
       settingsPayload.theme
     ]);
     return res.json({ success: true, message: 'Settings saved to SQLite' });
