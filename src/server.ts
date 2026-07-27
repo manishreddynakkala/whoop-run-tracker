@@ -286,7 +286,7 @@ app.get('/', async (req: Request, res: Response) => {
       display: block;
     }
 
-    /* Date Period Filter Bar */
+    /* Date Period Filter Bar Component */
     .filter-bar {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
@@ -778,10 +778,10 @@ app.get('/', async (req: Request, res: Response) => {
         </div>
       </div>
 
-      <!-- Top Right Actions Position (Theme Toggle, Status, Re-authenticate & Sync Data) -->
+      <!-- Top Right Actions Position (Clean Text Theme Toggle, Status, Re-authenticate & Sync Data) -->
       <div class="nav-right">
         <button onclick="toggleTheme()" class="theme-toggle-btn" id="themeToggleBtn">
-          <span id="themeToggleIcon">🌙</span> <span id="themeToggleText">Dark</span>
+          Theme: <span id="themeToggleText">Dark</span>
         </button>
         <div class="status-badge">
           <div class="status-dot ${hasTokenRecord ? 'active' : 'inactive'}"></div>
@@ -801,13 +801,13 @@ app.get('/', async (req: Request, res: Response) => {
   <div class="main-container">
     <!-- TAB 1: OVERVIEW & RECORDS -->
     <div class="tab-content active" id="overviewTab">
-      <!-- Automated Performance Insights Banner (Based on Latest 10 Runs) -->
+      <!-- 1. Automated Performance Insights Banner -->
       <div class="insights-card">
         <div class="insights-header">Performance Trend Insights (Latest 10 Runs)</div>
         <div class="insights-text" id="insightsContent">Analyzing your latest 10 running activities...</div>
       </div>
 
-      <!-- Current Calendar Month Target Goal -->
+      <!-- 2. Current Calendar Month Target Goal -->
       <div class="goal-card">
         <div class="goal-header">
           <div class="goal-title" id="goalTitleText">Current Month Target Goal (100 km)</div>
@@ -822,9 +822,9 @@ app.get('/', async (req: Request, res: Response) => {
         </div>
       </div>
 
-      <!-- Personal Records (PRs) Section -->
+      <!-- 3. Personal Records (PRs) Section -->
       <div class="prs-section">
-        <div class="prs-title">Personal Records & Highlights</div>
+        <div class="prs-title">Personal Records</div>
         <div class="prs-grid">
           <div class="pr-card">
             <div class="pr-label">Longest Run</div>
@@ -849,7 +849,28 @@ app.get('/', async (req: Request, res: Response) => {
         </div>
       </div>
 
-      <!-- Summary Metrics Grid -->
+      <!-- 4. Synced Period Filter Bar (Positioned Below PRs & Above Highlights) -->
+      <div class="filter-bar">
+        <div class="filter-title">
+          Select Period:
+        </div>
+        <div class="preset-group">
+          <button class="preset-btn preset-7d" onclick="selectPreset('7d')">7 Days</button>
+          <button class="preset-btn preset-30d" onclick="selectPreset('30d')">30 Days</button>
+          <button class="preset-btn preset-month" onclick="selectPreset('month')">This Month</button>
+          <button class="preset-btn preset-all active" onclick="selectPreset('all')">All Time</button>
+        </div>
+        <div class="date-inputs">
+          <input type="date" class="startDateInput" onchange="customDateChanged(this)" />
+          <span style="font-size:0.8rem; color:var(--text-muted)">to</span>
+          <input type="date" class="endDateInput" onchange="customDateChanged(this)" />
+        </div>
+      </div>
+
+      <!-- 5. Summary Metrics Grid (Highlights) -->
+      <div class="section-header" style="margin-bottom: 0.8rem;">
+        <div class="section-title" style="font-size: 1.05rem;">Highlights & Summary</div>
+      </div>
       <div class="grid">
         <div class="card">
           <div class="card-title">Run Count</div>
@@ -891,6 +912,24 @@ app.get('/', async (req: Request, res: Response) => {
 
     <!-- TAB 2: ANALYTICS (GRAPHICAL VISUALS) -->
     <div class="tab-content" id="analyticsTab">
+      <!-- Synced Period Filter Bar (Top of Analytics Tab) -->
+      <div class="filter-bar">
+        <div class="filter-title">
+          Select Period:
+        </div>
+        <div class="preset-group">
+          <button class="preset-btn preset-7d" onclick="selectPreset('7d')">7 Days</button>
+          <button class="preset-btn preset-30d" onclick="selectPreset('30d')">30 Days</button>
+          <button class="preset-btn preset-month" onclick="selectPreset('month')">This Month</button>
+          <button class="preset-btn preset-all active" onclick="selectPreset('all')">All Time</button>
+        </div>
+        <div class="date-inputs">
+          <input type="date" class="startDateInput" onchange="customDateChanged(this)" />
+          <span style="font-size:0.8rem; color:var(--text-muted)">to</span>
+          <input type="date" class="endDateInput" onchange="customDateChanged(this)" />
+        </div>
+      </div>
+
       <div class="charts-grid">
         <!-- Chart 1: Distance & Pace Trend -->
         <div class="chart-card">
@@ -940,21 +979,21 @@ app.get('/', async (req: Request, res: Response) => {
 
     <!-- TAB 3: HISTORY (RUNNING PERFORMANCE HISTORY TABLE) -->
     <div class="tab-content" id="historyTab">
-      <!-- Date Period Filter Controls -->
+      <!-- Synced Period Filter Bar (Top of History Tab) -->
       <div class="filter-bar">
         <div class="filter-title">
           Select Period:
         </div>
         <div class="preset-group">
-          <button class="preset-btn" onclick="selectPreset('7d', this)">7 Days</button>
-          <button class="preset-btn" onclick="selectPreset('30d', this)">30 Days</button>
-          <button class="preset-btn" onclick="selectPreset('month', this)">This Month</button>
-          <button class="preset-btn active" onclick="selectPreset('all', this)">All Time</button>
+          <button class="preset-btn preset-7d" onclick="selectPreset('7d')">7 Days</button>
+          <button class="preset-btn preset-30d" onclick="selectPreset('30d')">30 Days</button>
+          <button class="preset-btn preset-month" onclick="selectPreset('month')">This Month</button>
+          <button class="preset-btn preset-all active" onclick="selectPreset('all')">All Time</button>
         </div>
         <div class="date-inputs">
-          <input type="date" id="startDate" onchange="customDateChanged()" />
+          <input type="date" class="startDateInput" onchange="customDateChanged(this)" />
           <span style="font-size:0.8rem; color:var(--text-muted)">to</span>
-          <input type="date" id="endDate" onchange="customDateChanged()" />
+          <input type="date" class="endDateInput" onchange="customDateChanged(this)" />
         </div>
       </div>
 
@@ -1008,6 +1047,7 @@ app.get('/', async (req: Request, res: Response) => {
   <script>
     let currentStartDate = null;
     let currentEndDate = null;
+    let activePreset = 'all';
     let allRunsCache = [];
     let chartInstanceDistancePace = null;
     let chartInstanceHrZones = null;
@@ -1015,17 +1055,15 @@ app.get('/', async (req: Request, res: Response) => {
     let chartInstanceWeeklyMileage = null;
     let modalChartInstance = null;
 
-    // Theme Management
+    // Theme Management (Clean Text Only, No Emojis)
     function initTheme() {
       const savedTheme = localStorage.getItem('theme');
       if (savedTheme === 'dark') {
         document.body.classList.add('dark-mode');
-        document.getElementById('themeToggleIcon').innerText = '☀️';
         document.getElementById('themeToggleText').innerText = 'Light';
         Chart.defaults.color = '#94a3b8';
       } else {
         document.body.classList.remove('dark-mode');
-        document.getElementById('themeToggleIcon').innerText = '🌙';
         document.getElementById('themeToggleText').innerText = 'Dark';
         Chart.defaults.color = '#64748b';
       }
@@ -1035,7 +1073,6 @@ app.get('/', async (req: Request, res: Response) => {
       const isDark = document.body.classList.toggle('dark-mode');
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
       
-      document.getElementById('themeToggleIcon').innerText = isDark ? '☀️' : '🌙';
       document.getElementById('themeToggleText').innerText = isDark ? 'Light' : 'Dark';
       Chart.defaults.color = isDark ? '#94a3b8' : '#64748b';
       
@@ -1063,6 +1100,15 @@ app.get('/', async (req: Request, res: Response) => {
           if (chartInstanceWeeklyMileage) chartInstanceWeeklyMileage.resize();
         }, 50);
       }
+    }
+
+    function syncFilterUI() {
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      if (activePreset) {
+        document.querySelectorAll('.preset-' + activePreset).forEach(b => b.classList.add('active'));
+      }
+      document.querySelectorAll('.startDateInput').forEach(inp => inp.value = currentStartDate || '');
+      document.querySelectorAll('.endDateInput').forEach(inp => inp.value = currentEndDate || '');
     }
 
     function calcPaceDec(durationMs, distKm) {
@@ -1122,7 +1168,7 @@ app.get('/', async (req: Request, res: Response) => {
         calculatePRsAndGoals(allRunsCache);
         renderLatest10Insights(allRunsCache);
 
-        // 2. Determine Filtered Runs for History table and Period KPIs
+        // 2. Determine Filtered Runs for History table, Period KPIs, and Charts
         let filteredRuns = allRunsCache;
         if (currentStartDate || currentEndDate) {
           const params = new URLSearchParams();
@@ -1679,50 +1725,50 @@ app.get('/', async (req: Request, res: Response) => {
       }
     }
 
-    function selectPreset(type, btnEl) {
-      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-      if (btnEl) btnEl.classList.add('active');
-
+    // Synchronized Preset Selector Across All Tabs
+    function selectPreset(type) {
+      activePreset = type;
       const now = new Date();
       const todayStr = now.toISOString().split('T')[0];
-      document.getElementById('endDate').value = todayStr;
 
       if (type === '7d') {
         const d = new Date();
         d.setDate(now.getDate() - 7);
         currentStartDate = d.toISOString().split('T')[0];
         currentEndDate = todayStr;
-        document.getElementById('startDate').value = currentStartDate;
         document.getElementById('periodLabel').innerText = '(Last 7 Days)';
       } else if (type === '30d') {
         const d = new Date();
         d.setDate(now.getDate() - 30);
         currentStartDate = d.toISOString().split('T')[0];
         currentEndDate = todayStr;
-        document.getElementById('startDate').value = currentStartDate;
         document.getElementById('periodLabel').innerText = '(Last 30 Days)';
       } else if (type === 'month') {
         const d = new Date(now.getFullYear(), now.getMonth(), 1);
         currentStartDate = d.toISOString().split('T')[0];
         currentEndDate = todayStr;
-        document.getElementById('startDate').value = currentStartDate;
         document.getElementById('periodLabel').innerText = '(This Month)';
       } else if (type === 'all') {
         currentStartDate = null;
         currentEndDate = null;
-        document.getElementById('startDate').value = '';
-        document.getElementById('endDate').value = '';
         document.getElementById('periodLabel').innerText = '(All Time)';
       }
 
+      syncFilterUI();
       loadRuns();
     }
 
-    function customDateChanged() {
-      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-      currentStartDate = document.getElementById('startDate').value || null;
-      currentEndDate = document.getElementById('endDate').value || null;
-      document.getElementById('periodLabel').innerText = currentStartDate || currentEndDate ? '(Custom Period)' : '(All Time)';
+    function customDateChanged(inputEl) {
+      activePreset = null;
+      const parentBar = inputEl.closest('.filter-bar');
+      const startInp = parentBar.querySelector('.startDateInput');
+      const endInp = parentBar.querySelector('.endDateInput');
+
+      currentStartDate = startInp.value || null;
+      currentEndDate = endInp.value || null;
+      document.getElementById('periodLabel').innerText = (currentStartDate || currentEndDate) ? '(Custom Period)' : '(All Time)';
+
+      syncFilterUI();
       loadRuns();
     }
 
