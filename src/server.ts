@@ -55,182 +55,184 @@ app.get('/', async (req: Request, res: Response) => {
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
   <style>
     :root {
-      --bg-dark: #070a12;
-      --card-bg: rgba(15, 23, 42, 0.85);
-      --card-border: rgba(255, 255, 255, 0.1);
-      --theme-blue: #00c6ff;
-      --theme-blue-deep: #0072ff;
-      --theme-blue-glow: rgba(0, 198, 255, 0.35);
-      --theme-sky: #38bdf8;
-      --theme-cyan: #06b6d4;
-      --theme-green: #00e676;
-      --text-white: #ffffff;
-      --text-gray: #94a3b8;
-      --text-dim: #64748b;
+      --bg-main: #f7f7fa;
+      --nav-bg: #ffffff;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --theme-blue: #0080ff;
+      --theme-blue-hover: #0066cc;
+      --theme-sky: #00a3ff;
+      --theme-orange: #fc4c02;
+      --text-dark: #1e293b;
+      --text-muted: #64748b;
+      --text-dim: #94a3b8;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: var(--bg-dark);
-      background-image: 
-        radial-gradient(at 15% 15%, rgba(0, 198, 255, 0.18) 0px, transparent 45%),
-        radial-gradient(at 85% 85%, rgba(56, 189, 248, 0.12) 0px, transparent 45%);
-      color: var(--text-white);
+      background-color: var(--bg-main);
+      color: var(--text-dark);
       min-height: 100vh;
-      padding: 1.5rem 1rem;
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
 
-    .container {
-      max-width: 1140px;
+    /* Strava-Style Top Navigation Bar */
+    .top-navbar {
+      background-color: var(--nav-bg);
+      border-bottom: 1px solid #e6e6e8;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .nav-container {
+      max-width: 1200px;
       margin: 0 auto;
-    }
-
-    /* Header Bar */
-    header {
+      padding: 0 1.5rem;
+      height: 62px;
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
       justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1.25rem;
-      border-bottom: 1px solid var(--card-border);
     }
 
-    .logo-section {
+    .nav-left {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 2.25rem;
     }
 
-    .logo-badge {
-      background: linear-gradient(135deg, var(--theme-blue), var(--theme-blue-deep));
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .brand-icon {
+      background: linear-gradient(135deg, var(--theme-blue), #0052cc);
+      color: white;
+      font-weight: 800;
+      font-size: 1.25rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 800;
-      font-size: 1.5rem;
-      letter-spacing: -1px;
-      color: white;
-      box-shadow: 0 4px 25px var(--theme-blue-glow);
     }
 
-    .title-group h1 {
-      font-size: 1.85rem;
+    .brand-name {
+      font-size: 1.35rem;
       font-weight: 800;
       letter-spacing: -0.03em;
-      text-transform: none;
-      background: linear-gradient(to right, #ffffff, #cbd5e1);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: var(--text-dark);
     }
 
-    .header-actions {
+    /* Strava Top Tabs Bar */
+    .top-tabs {
       display: flex;
-      gap: 12px;
       align-items: center;
-      flex-wrap: wrap;
+      gap: 0.5rem;
+      height: 62px;
     }
 
-    .status-pill {
+    .top-tab-btn {
+      background: transparent;
+      border: none;
+      color: #475569;
+      font-size: 0.92rem;
+      font-weight: 600;
+      height: 62px;
+      padding: 0 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .top-tab-btn:hover {
+      color: var(--theme-blue);
+    }
+
+    .top-tab-btn.active {
+      color: var(--theme-blue);
+      font-weight: 700;
+      border-bottom-color: var(--theme-blue);
+    }
+
+    /* Strava Top Right Action Controls */
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-badge {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 7px 16px;
-      border-radius: 24px;
-      font-size: 0.82rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--card-border);
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: #f1f5f9;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
     }
 
     .status-dot {
-      width: 9px;
-      height: 9px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
     }
+    .status-dot.active { background-color: #10b981; }
+    .status-dot.inactive { background-color: #ef4444; }
 
-    .status-connected { background-color: var(--theme-green); box-shadow: 0 0 12px rgba(0, 230, 118, 0.4); }
-    .status-disconnected { background-color: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); }
-
-    .btn {
+    /* Strava Standard Button Style */
+    .strava-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      padding: 10px 18px;
-      border-radius: 12px;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 4px;
       font-weight: 700;
       font-size: 0.85rem;
-      letter-spacing: -0.01em;
       cursor: pointer;
       text-decoration: none;
-      transition: all 0.25s ease;
+      transition: background-color 0.2s ease, transform 0.1s ease;
       border: none;
     }
 
-    .btn-primary {
-      background: linear-gradient(135deg, var(--theme-blue), var(--theme-blue-deep));
-      color: white;
-      box-shadow: 0 4px 20px var(--theme-blue-glow);
+    .strava-btn-primary {
+      background-color: var(--theme-blue);
+      color: #ffffff;
+    }
+    .strava-btn-primary:hover {
+      background-color: var(--theme-blue-hover);
     }
 
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 25px rgba(0, 198, 255, 0.5);
+    .strava-btn-secondary {
+      background-color: #f1f5f9;
+      color: var(--text-dark);
+      border: 1px solid #cbd5e1;
+    }
+    .strava-btn-secondary:hover {
+      background-color: #e2e8f0;
     }
 
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.07);
-      color: var(--text-white);
-      border: 1px solid var(--card-border);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.14);
-    }
-
-    /* Tab Navigation Bar */
-    .tab-bar {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 1.75rem;
-      border-bottom: 1px solid var(--card-border);
-      padding-bottom: 0.75rem;
-    }
-
-    .tab-btn {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--card-border);
-      color: var(--text-gray);
-      padding: 11px 22px;
-      border-radius: 14px;
-      font-size: 0.9rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-      cursor: pointer;
-      transition: all 0.25s ease;
-    }
-
-    .tab-btn:hover {
-      background: rgba(255, 255, 255, 0.09);
-      color: var(--text-white);
-    }
-
-    .tab-btn.active {
-      background: linear-gradient(135deg, var(--theme-blue), var(--theme-blue-deep));
-      color: white;
-      border-color: transparent;
-      box-shadow: 0 4px 20px var(--theme-blue-glow);
+    /* Main Content Wrapper */
+    .main-container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
     }
 
     .tab-content {
@@ -244,52 +246,48 @@ app.get('/', async (req: Request, res: Response) => {
     /* Date Period Filter Bar */
     .filter-bar {
       background: var(--card-bg);
-      backdrop-filter: blur(16px);
       border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 1.1rem 1.5rem;
-      margin-bottom: 1.75rem;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 1.25rem;
+      gap: 1rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
     .filter-title {
       font-size: 0.85rem;
       font-weight: 700;
-      letter-spacing: -0.01em;
-      color: var(--text-gray);
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .preset-group {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
     }
 
     .preset-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--card-border);
-      color: var(--text-gray);
-      padding: 8px 16px;
-      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 4px;
       font-size: 0.82rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
+      font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
     }
 
     .preset-btn:hover, .preset-btn.active {
-      background: linear-gradient(135deg, var(--theme-blue), var(--theme-blue-deep));
+      background: var(--theme-blue);
       color: white;
-      border-color: transparent;
-      box-shadow: 0 4px 15px var(--theme-blue-glow);
+      border-color: var(--theme-blue);
     }
 
     .date-inputs {
@@ -300,24 +298,24 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .date-inputs input[type="date"] {
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid var(--card-border);
-      color: var(--text-white);
-      padding: 8px 12px;
-      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: var(--text-dark);
+      padding: 6px 10px;
+      border-radius: 4px;
       font-family: inherit;
       font-size: 0.82rem;
       font-weight: 600;
     }
 
-    /* Automated Insights Banner */
+    /* Automated Insights Card */
     .insights-card {
-      background: linear-gradient(135deg, rgba(0, 198, 255, 0.12), rgba(0, 114, 255, 0.06));
-      border: 1px solid rgba(0, 198, 255, 0.25);
-      border-radius: 20px;
-      padding: 1.35rem 1.6rem;
-      margin-bottom: 1.75rem;
-      backdrop-filter: blur(16px);
+      background: #f0f7ff;
+      border: 1px solid #bbe3ff;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
     }
 
     .insights-header {
@@ -326,31 +324,31 @@ app.get('/', async (req: Request, res: Response) => {
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--theme-blue);
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.4rem;
     }
 
     .insights-text {
       font-size: 0.95rem;
       font-weight: 500;
-      color: var(--text-white);
+      color: var(--text-dark);
       line-height: 1.6;
     }
 
     /* Monthly Goal Progress Card */
     .goal-card {
       background: var(--card-bg);
-      backdrop-filter: blur(16px);
       border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 1.4rem 1.6rem;
-      margin-bottom: 1.75rem;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
     .goal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.8rem;
+      margin-bottom: 0.75rem;
     }
 
     .goal-title {
@@ -358,50 +356,49 @@ app.get('/', async (req: Request, res: Response) => {
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: var(--text-gray);
+      color: var(--text-muted);
     }
 
     .goal-stats {
       font-size: 0.9rem;
-      font-weight: 700;
+      font-weight: 800;
       color: var(--theme-blue);
     }
 
     .progress-bar-bg {
-      background: rgba(255, 255, 255, 0.08);
-      height: 12px;
-      border-radius: 10px;
+      background: #e2e8f0;
+      height: 10px;
+      border-radius: 6px;
       overflow: hidden;
       margin-bottom: 0.6rem;
     }
 
     .progress-bar-fill {
-      background: linear-gradient(90deg, var(--theme-blue), var(--theme-blue-deep));
+      background: var(--theme-blue);
       height: 100%;
-      border-radius: 10px;
+      border-radius: 6px;
       transition: width 0.4s ease;
-      box-shadow: 0 0 12px var(--theme-blue-glow);
     }
 
     .goal-footer {
       display: flex;
       justify-content: space-between;
       font-size: 0.78rem;
-      color: var(--text-dim);
+      color: var(--text-muted);
       font-weight: 500;
     }
 
     /* Personal Records (PRs) Section */
     .prs-section {
-      margin-bottom: 1.75rem;
+      margin-bottom: 1.5rem;
     }
 
     .prs-title {
       font-size: 1.05rem;
       font-weight: 800;
       letter-spacing: -0.02em;
-      color: var(--text-white);
-      margin-bottom: 0.9rem;
+      color: var(--text-dark);
+      margin-bottom: 0.85rem;
     }
 
     .prs-grid {
@@ -411,9 +408,9 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .pr-card {
-      background: rgba(0, 198, 255, 0.06);
-      border: 1px solid rgba(0, 198, 255, 0.2);
-      border-radius: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
       padding: 1.1rem;
     }
 
@@ -422,7 +419,7 @@ app.get('/', async (req: Request, res: Response) => {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: var(--text-dim);
+      color: var(--text-muted);
       margin-bottom: 0.3rem;
     }
 
@@ -435,7 +432,7 @@ app.get('/', async (req: Request, res: Response) => {
 
     .pr-date {
       font-size: 0.72rem;
-      color: var(--text-gray);
+      color: var(--text-dim);
       margin-top: 0.3rem;
     }
 
@@ -443,35 +440,35 @@ app.get('/', async (req: Request, res: Response) => {
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
-      gap: 1.1rem;
+      gap: 1rem;
       margin-bottom: 2rem;
     }
 
     .card {
       background: var(--card-bg);
-      backdrop-filter: blur(16px);
       border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 1.25rem 1.1rem;
-      transition: transform 0.2s ease, border-color 0.2s ease;
+      border-radius: 12px;
+      padding: 1.2rem 1.1rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      transition: transform 0.15s ease, border-color 0.15s ease;
     }
 
     .card:hover {
-      border-color: rgba(0, 198, 255, 0.3);
-      transform: translateY(-2px);
+      border-color: var(--theme-blue);
+      transform: translateY(-1px);
     }
 
     .card-title {
-      font-size: 0.78rem;
-      color: var(--text-dim);
+      font-size: 0.75rem;
+      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       font-weight: 700;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.35rem;
     }
 
     .card-value {
-      font-size: 1.95rem;
+      font-size: 1.85rem;
       font-weight: 800;
       letter-spacing: -0.03em;
       line-height: 1.1;
@@ -479,10 +476,10 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .card-subtitle {
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       font-weight: 500;
       color: var(--text-dim);
-      margin-top: 0.4rem;
+      margin-top: 0.35rem;
     }
 
     /* Charts Grid Section */
@@ -490,7 +487,7 @@ app.get('/', async (req: Request, res: Response) => {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
       gap: 1.5rem;
-      margin-bottom: 2.25rem;
+      margin-bottom: 2rem;
     }
 
     @media (max-width: 600px) {
@@ -501,12 +498,12 @@ app.get('/', async (req: Request, res: Response) => {
 
     .chart-card {
       background: var(--card-bg);
-      backdrop-filter: blur(16px);
       border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 1.5rem;
+      border-radius: 12px;
+      padding: 1.4rem;
       display: flex;
       flex-direction: column;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
     .chart-header {
@@ -520,33 +517,25 @@ app.get('/', async (req: Request, res: Response) => {
       font-size: 1.05rem;
       font-weight: 800;
       letter-spacing: -0.02em;
-      color: var(--text-white);
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      color: var(--text-dark);
     }
 
     .chart-zoom-btn {
-      background: rgba(0, 198, 255, 0.12);
-      border: 1px solid rgba(0, 198, 255, 0.3);
-      color: var(--theme-blue);
-      padding: 6px 12px;
-      border-radius: 10px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: var(--text-dark);
+      padding: 5px 12px;
+      border-radius: 4px;
       font-size: 0.78rem;
       font-weight: 700;
-      letter-spacing: -0.01em;
       cursor: pointer;
-      transition: all 0.2s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      transition: all 0.15s ease;
     }
 
     .chart-zoom-btn:hover {
       background: var(--theme-blue);
       color: white;
-      border-color: transparent;
-      box-shadow: 0 4px 15px var(--theme-blue-glow);
+      border-color: var(--theme-blue);
     }
 
     .chart-body {
@@ -562,15 +551,15 @@ app.get('/', async (req: Request, res: Response) => {
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(5, 7, 18, 0.88);
-      backdrop-filter: blur(20px);
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
       z-index: 9999;
       display: flex;
       align-items: center;
       justify-content: center;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.25s ease;
+      transition: opacity 0.2s ease;
       padding: 1.5rem;
     }
 
@@ -580,17 +569,16 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .modal-container {
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid var(--card-border);
-      border-radius: 24px;
+      background: #ffffff;
+      border-radius: 16px;
       width: 94vw;
       max-width: 1100px;
       height: 85vh;
       max-height: 750px;
-      padding: 1.75rem;
+      padding: 1.5rem;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 30px var(--theme-blue-glow);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     }
 
     .modal-header {
@@ -608,7 +596,7 @@ app.get('/', async (req: Request, res: Response) => {
       font-size: 1.2rem;
       font-weight: 800;
       letter-spacing: -0.02em;
-      color: var(--text-white);
+      color: var(--text-dark);
     }
 
     .modal-controls {
@@ -618,29 +606,29 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .modal-btn {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--card-border);
-      color: var(--text-white);
-      padding: 8px 14px;
-      border-radius: 10px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: var(--text-dark);
+      padding: 6px 12px;
+      border-radius: 4px;
       font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
     }
 
     .modal-btn:hover {
-      background: rgba(255, 255, 255, 0.18);
+      background: #e2e8f0;
     }
 
     .modal-btn-close {
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      color: #ef4444;
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #dc2626;
     }
 
     .modal-btn-close:hover {
-      background: #ef4444;
+      background: #dc2626;
       color: white;
     }
 
@@ -656,26 +644,24 @@ app.get('/', async (req: Request, res: Response) => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.1rem;
+      margin-bottom: 1rem;
     }
 
     .section-title {
-      font-size: 1.3rem;
+      font-size: 1.25rem;
       font-weight: 800;
       letter-spacing: -0.03em;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      color: var(--text-dark);
     }
 
     .table-container {
       background: var(--card-bg);
-      backdrop-filter: blur(16px);
       border: 1px solid var(--card-border);
-      border-radius: 20px;
+      border-radius: 12px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       margin-bottom: 3rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
     table {
@@ -686,21 +672,22 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     th {
-      background: rgba(255, 255, 255, 0.02);
-      padding: 1rem 1.25rem;
+      background: #f8fafc;
+      padding: 0.9rem 1.25rem;
       font-size: 0.78rem;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
-      font-weight: 700;
-      color: var(--text-dim);
+      letter-spacing: 0.5px;
+      font-weight: 800;
+      color: var(--text-muted);
       border-bottom: 1px solid var(--card-border);
     }
 
     td {
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      font-size: 0.92rem;
+      padding: 0.95rem 1.25rem;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.9rem;
       font-weight: 500;
+      color: var(--text-dark);
     }
 
     tr:last-child td {
@@ -708,58 +695,63 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     tr:hover td {
-      background: rgba(255, 255, 255, 0.02);
+      background: #f8fafc;
     }
 
     .badge {
       display: inline-block;
-      padding: 5px 10px;
-      border-radius: 8px;
+      padding: 4px 10px;
+      border-radius: 4px;
       font-size: 0.78rem;
       font-weight: 700;
-      letter-spacing: -0.01em;
-      background: rgba(0, 198, 255, 0.12);
+      background: #f0f7ff;
       color: var(--theme-blue);
-      border: 1px solid rgba(0, 198, 255, 0.25);
+      border: 1px solid #cce7ff;
     }
 
     .badge-dist {
-      background: rgba(0, 198, 255, 0.15);
+      background: #e6f3ff;
       color: var(--theme-blue);
-      border: 1px solid rgba(0, 198, 255, 0.3);
+      border: 1px solid #b3dcff;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="logo-section">
-        <div class="logo-badge">R</div>
-        <div class="title-group">
-          <h1>Run Tracker</h1>
+  <!-- Strava-Style Top Header Navigation -->
+  <nav class="top-navbar">
+    <div class="nav-container">
+      <div class="nav-left">
+        <a href="/" class="brand-logo">
+          <div class="brand-icon">R</div>
+          <div class="brand-name">Run Tracker</div>
+        </a>
+
+        <!-- Top Navigation Tabs Bar -->
+        <div class="top-tabs">
+          <button class="top-tab-btn active" onclick="switchTab('overviewTab', this)">Overview</button>
+          <button class="top-tab-btn" onclick="switchTab('analyticsTab', this)">Analytics</button>
+          <button class="top-tab-btn" onclick="switchTab('historyTab', this)">History</button>
         </div>
       </div>
-      <div class="header-actions">
-        <div class="status-pill">
-          <div class="status-dot ${hasTokenRecord ? 'status-connected' : 'status-disconnected'}"></div>
-          ${hasTokenRecord ? 'Authenticated' : 'Not Connected'}
+
+      <!-- Top Right Actions Position (Re-authenticate & Sync Data) -->
+      <div class="nav-right">
+        <div class="status-badge">
+          <div class="status-dot ${hasTokenRecord ? 'active' : 'inactive'}"></div>
+          ${hasTokenRecord ? 'Connected' : 'Not Connected'}
         </div>
-        <a href="/auth/login" class="btn btn-secondary">
+        <a href="/auth/login" class="strava-btn strava-btn-secondary">
           ${hasTokenRecord ? 'Re-authenticate' : 'Connect Account'}
         </a>
-        <button onclick="triggerSync()" class="btn btn-primary" id="syncBtn">
+        <button onclick="triggerSync()" class="strava-btn strava-btn-primary" id="syncBtn">
           Sync Data
         </button>
       </div>
-    </header>
-
-    <!-- Tab Bar Navigation -->
-    <div class="tab-bar">
-      <button class="tab-btn active" onclick="switchTab('overviewTab', this)">Overview</button>
-      <button class="tab-btn" onclick="switchTab('analyticsTab', this)">Analytics</button>
-      <button class="tab-btn" onclick="switchTab('historyTab', this)">History</button>
     </div>
+  </nav>
 
+  <!-- Main Content Wrapper -->
+  <div class="main-container">
     <!-- TAB 1: OVERVIEW & RECORDS -->
     <div class="tab-content active" id="overviewTab">
       <!-- Automated Performance Insights Banner (Based on Latest 10 Runs) -->
@@ -914,7 +906,7 @@ app.get('/', async (req: Request, res: Response) => {
         </div>
         <div class="date-inputs">
           <input type="date" id="startDate" onchange="customDateChanged()" />
-          <span style="font-size:0.8rem; color:var(--text-dim)">to</span>
+          <span style="font-size:0.8rem; color:var(--text-muted)">to</span>
           <input type="date" id="endDate" onchange="customDateChanged()" />
         </div>
       </div>
@@ -922,7 +914,7 @@ app.get('/', async (req: Request, res: Response) => {
       <!-- Running Activities Table -->
       <div class="section-header">
         <div class="section-title">
-          Running Performance History <span id="periodLabel" style="font-size:0.85rem; font-weight:500; color:var(--text-dim)">(All Time)</span>
+          Running Performance History <span id="periodLabel" style="font-size:0.85rem; font-weight:500; color:var(--text-muted)">(All Time)</span>
         </div>
       </div>
 
@@ -941,7 +933,7 @@ app.get('/', async (req: Request, res: Response) => {
             </tr>
           </thead>
           <tbody id="runsTableBody">
-            <tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-dim)">Loading running activities...</td></tr>
+            <tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-muted)">Loading running activities...</td></tr>
           </tbody>
         </table>
       </div>
@@ -976,11 +968,11 @@ app.get('/', async (req: Request, res: Response) => {
     let chartInstanceWeeklyMileage = null;
     let modalChartInstance = null;
 
-    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.color = '#64748b';
     Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
 
     function switchTab(tabId, btnEl) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.top-tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
       if (btnEl) btnEl.classList.add('active');
@@ -1043,7 +1035,7 @@ app.get('/', async (req: Request, res: Response) => {
 
     async function loadRuns() {
       const tbody = document.getElementById('runsTableBody');
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-dim)">Loading...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-muted)">Loading...</td></tr>';
 
       try {
         // 1. Fetch All Runs (unfiltered) to compute PRs, Current Calendar Month Goal, and Latest 10 Insights
@@ -1118,7 +1110,7 @@ app.get('/', async (req: Request, res: Response) => {
 
         // Render History Table Rows
         if (filteredRuns.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-dim)">No running activities found for the selected date period.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-muted)">No running activities found for the selected date period.</td></tr>';
           renderCharts([]);
           return;
         }
@@ -1343,18 +1335,18 @@ app.get('/', async (req: Request, res: Response) => {
             {
               label: 'Distance (km)',
               data: distances,
-              backgroundColor: 'rgba(0, 198, 255, 0.45)',
-              borderColor: '#00c6ff',
+              backgroundColor: 'rgba(0, 128, 255, 0.45)',
+              borderColor: '#0080ff',
               borderWidth: 2,
-              borderRadius: 6,
+              borderRadius: 4,
               yAxisID: 'yDist',
             },
             {
               label: 'Pace (min/km)',
               data: paces,
               type: 'line',
-              borderColor: '#38bdf8',
-              backgroundColor: '#38bdf8',
+              borderColor: '#00a3ff',
+              backgroundColor: '#00a3ff',
               borderWidth: 3,
               tension: 0.3,
               pointRadius: 4,
@@ -1379,18 +1371,18 @@ app.get('/', async (req: Request, res: Response) => {
             }
           },
           scales: {
-            x: { grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { grid: { color: 'rgba(0,0,0,0.05)' } },
             yDist: {
               type: 'linear',
               position: 'left',
-              title: { display: true, text: 'Distance (km)', color: '#00c6ff' },
-              grid: { color: 'rgba(255,255,255,0.05)' }
+              title: { display: true, text: 'Distance (km)', color: '#0080ff' },
+              grid: { color: 'rgba(0,0,0,0.05)' }
             },
             yPace: {
               type: 'linear',
               position: 'right',
               reverse: true,
-              title: { display: true, text: 'Pace (min/km - Faster)', color: '#38bdf8' },
+              title: { display: true, text: 'Pace (min/km - Faster)', color: '#00a3ff' },
               grid: { drawOnChartArea: false },
               ticks: {
                 callback: function(val) { return formatPaceDecToString(val); }
@@ -1419,7 +1411,7 @@ app.get('/', async (req: Request, res: Response) => {
           labels: ['Zone 1 (Recovery)', 'Zone 2 (Aerobic Base)', 'Zone 3 (Tempo)', 'Zone 4 (Threshold)', 'Zone 5 (Anaerobic Peak)'],
           datasets: [{
             data: [z1, z2, z3, z4, z5],
-            backgroundColor: ['#64748b', '#0284c7', '#38bdf8', '#00c6ff', '#0072ff'],
+            backgroundColor: ['#94a3b8', '#38bdf8', '#0080ff', '#0052cc', '#fc4c02'],
             borderWidth: 0,
             hoverOffset: 8
           }]
@@ -1449,8 +1441,8 @@ app.get('/', async (req: Request, res: Response) => {
             {
               label: 'WHOOP Strain (0-21)',
               data: strains,
-              borderColor: '#00c6ff',
-              backgroundColor: 'rgba(0, 198, 255, 0.1)',
+              borderColor: '#0080ff',
+              backgroundColor: 'rgba(0, 128, 255, 0.08)',
               borderWidth: 3,
               tension: 0.3,
               fill: true,
@@ -1459,7 +1451,7 @@ app.get('/', async (req: Request, res: Response) => {
             {
               label: 'Avg Heart Rate (BPM)',
               data: avgHrs,
-              borderColor: '#38bdf8',
+              borderColor: '#00a3ff',
               borderWidth: 2.5,
               tension: 0.3,
               pointRadius: 4,
@@ -1472,19 +1464,19 @@ app.get('/', async (req: Request, res: Response) => {
           maintainAspectRatio: false,
           plugins: { zoom: zoomPluginConfig },
           scales: {
-            x: { grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { grid: { color: 'rgba(0,0,0,0.05)' } },
             yStrain: {
               type: 'linear',
               position: 'left',
               min: 0,
               max: 21,
-              title: { display: true, text: 'Strain (0-21)', color: '#00c6ff' },
-              grid: { color: 'rgba(255,255,255,0.05)' }
+              title: { display: true, text: 'Strain (0-21)', color: '#0080ff' },
+              grid: { color: 'rgba(0,0,0,0.05)' }
             },
             yHr: {
               type: 'linear',
               position: 'right',
-              title: { display: true, text: 'Avg Heart Rate (BPM)', color: '#38bdf8' },
+              title: { display: true, text: 'Avg Heart Rate (BPM)', color: '#00a3ff' },
               grid: { drawOnChartArea: false }
             }
           }
@@ -1516,10 +1508,10 @@ app.get('/', async (req: Request, res: Response) => {
           datasets: [{
             label: 'Total Distance (km)',
             data: weekDistances,
-            backgroundColor: 'rgba(56, 189, 248, 0.5)',
-            borderColor: '#38bdf8',
+            backgroundColor: 'rgba(0, 163, 255, 0.45)',
+            borderColor: '#00a3ff',
             borderWidth: 2,
-            borderRadius: 8
+            borderRadius: 4
           }]
         },
         options: {
@@ -1534,10 +1526,10 @@ app.get('/', async (req: Request, res: Response) => {
             }
           },
           scales: {
-            x: { grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { grid: { color: 'rgba(0,0,0,0.05)' } },
             y: {
-              title: { display: true, text: 'Weekly Distance (km)', color: '#38bdf8' },
-              grid: { color: 'rgba(255,255,255,0.05)' }
+              title: { display: true, text: 'Weekly Distance (km)', color: '#00a3ff' },
+              grid: { color: 'rgba(0,0,0,0.05)' }
             }
           }
         }
