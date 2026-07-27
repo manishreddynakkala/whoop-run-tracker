@@ -58,6 +58,8 @@ app.get('/', async (req: Request, res: Response) => {
       --accent-orange: #ff7e36;
       --accent-cyan: #00f2fe;
       --accent-green: #00e676;
+      --accent-purple: #a78bfa;
+      --accent-pink: #ec4899;
       --text-main: #f3f4f6;
       --text-muted: #9ca3af;
     }
@@ -211,7 +213,7 @@ app.get('/', async (req: Request, res: Response) => {
     /* Summary Cards Grid */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       gap: 1rem;
       margin-bottom: 1.5rem;
     }
@@ -234,7 +236,7 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .card-value {
-      font-size: 1.8rem;
+      font-size: 1.7rem;
       font-weight: 800;
       letter-spacing: -0.8px;
     }
@@ -304,7 +306,7 @@ app.get('/', async (req: Request, res: Response) => {
 
     table {
       width: 100%;
-      min-width: 680px;
+      min-width: 760px;
       border-collapse: collapse;
       text-align: left;
     }
@@ -343,6 +345,12 @@ app.get('/', async (req: Request, res: Response) => {
       background: rgba(255, 126, 54, 0.15);
       color: var(--accent-orange);
       border: 1px solid rgba(255, 126, 54, 0.3);
+    }
+
+    .badge-pace {
+      background: rgba(236, 72, 153, 0.15);
+      color: var(--accent-pink);
+      border: 1px solid rgba(236, 72, 153, 0.3);
     }
   </style>
 </head>
@@ -401,8 +409,13 @@ app.get('/', async (req: Request, res: Response) => {
         <div class="card-subtitle">Kilometers run</div>
       </div>
       <div class="card">
+        <div class="card-title">Avg Pace</div>
+        <div class="card-value" id="kpiAvgPace" style="color: var(--accent-pink)">-</div>
+        <div class="card-subtitle">min / km</div>
+      </div>
+      <div class="card">
         <div class="card-title">Total Time</div>
-        <div class="card-value" id="kpiDuration" style="color: #a78bfa">-</div>
+        <div class="card-value" id="kpiDuration" style="color: var(--accent-purple)">-</div>
         <div class="card-subtitle">Hours & Mins</div>
       </div>
       <div class="card">
@@ -411,8 +424,8 @@ app.get('/', async (req: Request, res: Response) => {
         <div class="card-subtitle">WHOOP strain score</div>
       </div>
       <div class="card">
-        <div class="card-title">Avg / Max Heart Rate</div>
-        <div class="card-value" id="kpiAvgHr" style="font-size:1.5rem; color:var(--accent-green)">-</div>
+        <div class="card-title">Avg / Max HR</div>
+        <div class="card-value" id="kpiAvgHr" style="font-size:1.4rem; color:var(--accent-green)">-</div>
         <div class="card-subtitle">BPM average</div>
       </div>
     </div>
@@ -431,6 +444,7 @@ app.get('/', async (req: Request, res: Response) => {
             <th>Date & Time</th>
             <th>Sport</th>
             <th>Distance (km)</th>
+            <th>Pace (min/km)</th>
             <th>Duration</th>
             <th>Strain</th>
             <th>Avg / Max HR</th>
@@ -438,7 +452,7 @@ app.get('/', async (req: Request, res: Response) => {
           </tr>
         </thead>
         <tbody id="runsTableBody">
-          <tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-muted)">Loading running activities...</td></tr>
+          <tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-muted)">Loading running activities...</td></tr>
         </tbody>
       </table>
     </div>
@@ -448,9 +462,25 @@ app.get('/', async (req: Request, res: Response) => {
     let currentStartDate = null;
     let currentEndDate = null;
 
+    function calcPaceString(durationMs, distKm) {
+      if (!distKm || distKm <= 0 || !durationMs) return 'N/A';
+      const totalMins = durationMs / 60000;
+      const paceDec = totalMins / distKm;
+      if (paceDec > 30 || paceDec < 2) return 'N/A'; // Filter unrealistic pace numbers
+      const mins = Math.floor(paceDec);
+      let secs = Math.round((paceDec - mins) * 60);
+      let finalMins = mins;
+      if (secs === 60) {
+        secs = 0;
+        finalMins += 1;
+      }
+      const secsStr = secs < 10 ? '0' + secs : secs;
+      return \`\${finalMins}:\${secsStr} /km\`;
+    }
+
     async function loadRuns() {
       const tbody = document.getElementById('runsTableBody');
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-muted)">Loading...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-muted)">Loading...</td></tr>';
 
       const params = new URLSearchParams();
       if (currentStartDate) params.append('startDate', currentStartDate);
@@ -464,6 +494,8 @@ app.get('/', async (req: Request, res: Response) => {
         // Update KPI Cards using Kilometers (km)
         let totalDistKm = 0;
         let totalDurationMs = 0;
+        let totalPaceDistKm = 0;
+        let totalPaceDurationMs = 0;
         let totalStrain = 0;
         let strainCount = 0;
         let totalAvgHr = 0;
@@ -471,10 +503,18 @@ app.get('/', async (req: Request, res: Response) => {
         let maxHrReached = 0;
 
         runs.forEach(r => {
-          if (r.distance_km) totalDistKm += Number(r.distance_km);
-          else if (r.distance_meters) totalDistKm += Number(r.distance_meters) / 1000;
+          let distKm = 0;
+          if (r.distance_km) distKm = Number(r.distance_km);
+          else if (r.distance_meters) distKm = Number(r.distance_meters) / 1000;
 
+          totalDistKm += distKm;
           if (r.duration_ms) totalDurationMs += Number(r.duration_ms);
+
+          if (distKm > 0.1 && r.duration_ms) {
+            totalPaceDistKm += distKm;
+            totalPaceDurationMs += Number(r.duration_ms);
+          }
+
           if (r.strain) { totalStrain += Number(r.strain); strainCount++; }
           if (r.average_heart_rate) { totalAvgHr += Number(r.average_heart_rate); hrCount++; }
           if (r.max_heart_rate && Number(r.max_heart_rate) > maxHrReached) {
@@ -484,6 +524,9 @@ app.get('/', async (req: Request, res: Response) => {
 
         document.getElementById('kpiRunsCount').innerText = runs.length;
         document.getElementById('kpiDistance').innerText = totalDistKm > 0 ? totalDistKm.toFixed(2) + ' km' : '0 km';
+
+        // Average Pace for selected period
+        document.getElementById('kpiAvgPace').innerText = calcPaceString(totalPaceDurationMs, totalPaceDistKm);
 
         const totalMins = Math.round(totalDurationMs / 60000);
         const hours = Math.floor(totalMins / 60);
@@ -497,7 +540,7 @@ app.get('/', async (req: Request, res: Response) => {
 
         // Render Table Rows
         if (runs.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-muted)">No running activities found for the selected date period.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-muted)">No running activities found for the selected date period.</td></tr>';
           return;
         }
 
@@ -508,18 +551,24 @@ app.get('/', async (req: Request, res: Response) => {
           });
           const durationMin = Math.round(r.duration_ms / 60000);
           
+          let distKmNum = 0;
           let distKmStr = 'N/A';
           if (r.distance_km) {
-            distKmStr = Number(r.distance_km).toFixed(2) + ' km';
+            distKmNum = Number(r.distance_km);
+            distKmStr = distKmNum.toFixed(2) + ' km';
           } else if (r.distance_meters) {
-            distKmStr = (Number(r.distance_meters) / 1000).toFixed(2) + ' km';
+            distKmNum = Number(r.distance_meters) / 1000;
+            distKmStr = distKmNum.toFixed(2) + ' km';
           }
+
+          const paceStr = calcPaceString(r.duration_ms, distKmNum);
 
           return \`
             <tr>
               <td><strong>\${dateStr}</strong></td>
               <td>\${r.sport_name}</td>
               <td><strong style="color:var(--accent-cyan)">\${distKmStr}</strong></td>
+              <td><span class="badge badge-pace">\${paceStr}</span></td>
               <td>\${durationMin} mins</td>
               <td><span class="badge badge-strain">\${r.strain ? Number(r.strain).toFixed(1) : 'N/A'}</span></td>
               <td><span class="badge badge-hr">\${r.average_heart_rate || 'N/A'} / \${r.max_heart_rate || 'N/A'} bpm</span></td>
@@ -529,7 +578,7 @@ app.get('/', async (req: Request, res: Response) => {
         }).join('');
 
       } catch (err) {
-        tbody.innerHTML = \`<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--accent-red)">Error loading data: \${err.message}</td></tr>\`;
+        tbody.innerHTML = \`<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--accent-red)">Error loading data: \${err.message}</td></tr>\`;
       }
     }
 
