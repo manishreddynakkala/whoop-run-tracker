@@ -52,31 +52,32 @@ app.get('/', async (req: Request, res: Response) => {
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --bg-black: #050507;
-      --card-bg: rgba(18, 18, 24, 0.85);
+      --bg-dark: #070a12;
+      --card-bg: rgba(15, 23, 42, 0.85);
       --card-border: rgba(255, 255, 255, 0.1);
-      --whoop-red: #ff0033;
-      --whoop-red-glow: rgba(255, 0, 51, 0.35);
-      --whoop-green: #00e676;
-      --whoop-green-glow: rgba(0, 230, 118, 0.35);
-      --whoop-cyan: #00f2fe;
-      --whoop-purple: #a78bfa;
-      --whoop-pink: #ec4899;
-      --whoop-gold: #f59e0b;
-      --whoop-orange: #ff7e36;
+      --theme-blue: #00c6ff;
+      --theme-blue-deep: #0072ff;
+      --theme-blue-glow: rgba(0, 198, 255, 0.35);
+      --theme-sky: #38bdf8;
+      --theme-cyan: #06b6d4;
+      --theme-green: #00e676;
+      --theme-purple: #a78bfa;
+      --theme-pink: #ec4899;
+      --theme-gold: #f59e0b;
+      --theme-orange: #ff7e36;
       --text-white: #ffffff;
-      --text-gray: #a1a1aa;
-      --text-dim: #71717a;
+      --text-gray: #94a3b8;
+      --text-dim: #64748b;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: var(--bg-black);
+      background-color: var(--bg-dark);
       background-image: 
-        radial-gradient(at 15% 15%, rgba(255, 0, 51, 0.18) 0px, transparent 45%),
-        radial-gradient(at 85% 85%, rgba(0, 242, 254, 0.12) 0px, transparent 45%);
+        radial-gradient(at 15% 15%, rgba(0, 198, 255, 0.18) 0px, transparent 45%),
+        radial-gradient(at 85% 85%, rgba(56, 189, 248, 0.12) 0px, transparent 45%);
       color: var(--text-white);
       min-height: 100vh;
       padding: 1.5rem 1rem;
@@ -107,7 +108,7 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .logo-badge {
-      background: linear-gradient(135deg, var(--whoop-red), #cc0029);
+      background: linear-gradient(135deg, var(--theme-blue), var(--theme-blue-deep));
       width: 48px;
       height: 48px;
       border-radius: 14px;
@@ -118,7 +119,7 @@ app.get('/', async (req: Request, res: Response) => {
       font-size: 1.5rem;
       letter-spacing: -1px;
       color: white;
-      box-shadow: 0 4px 25px var(--whoop-red-glow);
+      box-shadow: 0 4px 25px var(--theme-blue-glow);
     }
 
     .title-group h1 {
@@ -126,7 +127,7 @@ app.get('/', async (req: Request, res: Response) => {
       font-weight: 900;
       letter-spacing: 0.5px;
       text-transform: uppercase;
-      background: linear-gradient(to right, #ffffff, #d4d4d8);
+      background: linear-gradient(to right, #ffffff, #cbd5e1);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -166,8 +167,8 @@ app.get('/', async (req: Request, res: Response) => {
       border-radius: 50%;
     }
 
-    .status-connected { background-color: var(--whoop-green); box-shadow: 0 0 12px var(--whoop-green-glow); }
-    .status-disconnected { background-color: var(--whoop-red); box-shadow: 0 0 12px var(--whoop-red-glow); }
+    .status-connected { background-color: var(--theme-green); box-shadow: 0 0 12px rgba(0, 230, 118, 0.4); }
+    .status-disconnected { background-color: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); }
 
     .btn {
       display: inline-flex;
@@ -187,14 +188,14 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--whoop-red), #b30024);
+      background: linear-gradient(135deg, var(--theme-blue), var(--theme-blue-deep));
       color: white;
-      box-shadow: 0 4px 20px var(--whoop-red-glow);
+      box-shadow: 0 4px 20px var(--theme-blue-glow);
     }
 
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 25px rgba(255, 0, 51, 0.5);
+      box-shadow: 0 6px 25px rgba(0, 198, 255, 0.5);
     }
 
     .btn-secondary {
@@ -253,10 +254,10 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .preset-btn:hover, .preset-btn.active {
-      background: var(--whoop-red);
+      background: linear-gradient(135deg, var(--theme-blue), var(--theme-blue-deep));
       color: white;
       border-color: transparent;
-      box-shadow: 0 4px 15px var(--whoop-red-glow);
+      box-shadow: 0 4px 15px var(--theme-blue-glow);
     }
 
     .date-inputs {
@@ -280,7 +281,7 @@ app.get('/', async (req: Request, res: Response) => {
     /* Metric Cards Grid */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
       gap: 1.1rem;
       margin-bottom: 2rem;
     }
@@ -295,7 +296,7 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .card:hover {
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: rgba(0, 198, 255, 0.3);
       transform: translateY(-2px);
     }
 
@@ -440,27 +441,33 @@ app.get('/', async (req: Request, res: Response) => {
       letter-spacing: 0.3px;
     }
 
+    .badge-dist {
+      background: rgba(0, 198, 255, 0.15);
+      color: var(--theme-blue);
+      border: 1px solid rgba(0, 198, 255, 0.3);
+    }
+
     .badge-strain {
-      background: rgba(255, 0, 51, 0.15);
-      color: var(--whoop-red);
-      border: 1px solid rgba(255, 0, 51, 0.3);
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--theme-sky);
+      border: 1px solid rgba(56, 189, 248, 0.3);
     }
 
     .badge-hr {
       background: rgba(255, 126, 54, 0.15);
-      color: var(--whoop-orange);
+      color: var(--theme-orange);
       border: 1px solid rgba(255, 126, 54, 0.3);
     }
 
     .badge-pace {
       background: rgba(236, 72, 153, 0.15);
-      color: var(--whoop-pink);
+      color: var(--theme-pink);
       border: 1px solid rgba(236, 72, 153, 0.3);
     }
 
     .badge-cal {
       background: rgba(245, 158, 11, 0.15);
-      color: var(--whoop-gold);
+      color: var(--theme-gold);
       border: 1px solid rgba(245, 158, 11, 0.3);
     }
   </style>
@@ -511,37 +518,37 @@ app.get('/', async (req: Request, res: Response) => {
     <div class="grid">
       <div class="card">
         <div class="card-title">Run Count</div>
-        <div class="card-value" id="kpiRunsCount" style="color: var(--whoop-cyan)">-</div>
+        <div class="card-value" id="kpiRunsCount" style="color: var(--theme-sky)">-</div>
         <div class="card-subtitle">Sessions</div>
       </div>
       <div class="card">
         <div class="card-title">Total Distance</div>
-        <div class="card-value" id="kpiDistance" style="color: var(--whoop-red)">-</div>
+        <div class="card-value" id="kpiDistance" style="color: var(--theme-blue)">-</div>
         <div class="card-subtitle">Kilometers</div>
       </div>
       <div class="card">
         <div class="card-title">Avg Pace</div>
-        <div class="card-value" id="kpiAvgPace" style="color: var(--whoop-pink)">-</div>
+        <div class="card-value" id="kpiAvgPace" style="color: var(--theme-pink)">-</div>
         <div class="card-subtitle">min / km</div>
       </div>
       <div class="card">
         <div class="card-title">Total Duration</div>
-        <div class="card-value" id="kpiDuration" style="color: var(--whoop-purple)">-</div>
+        <div class="card-value" id="kpiDuration" style="color: var(--theme-purple)">-</div>
         <div class="card-subtitle">Hours & Mins</div>
       </div>
       <div class="card">
         <div class="card-title">Total Calories</div>
-        <div class="card-value" id="kpiCalories" style="color: var(--whoop-gold)">-</div>
+        <div class="card-value" id="kpiCalories" style="color: var(--theme-gold)">-</div>
         <div class="card-subtitle">kcal burned</div>
       </div>
       <div class="card">
         <div class="card-title">Avg Strain</div>
-        <div class="card-value" id="kpiAvgStrain" style="color: var(--whoop-orange)">-</div>
+        <div class="card-value" id="kpiAvgStrain" style="color: var(--theme-orange)">-</div>
         <div class="card-subtitle">WHOOP 0-21</div>
       </div>
       <div class="card">
         <div class="card-title">Avg / Max HR</div>
-        <div class="card-value" id="kpiAvgHr" style="font-size:1.45rem; color:var(--whoop-green)">-</div>
+        <div class="card-value" id="kpiAvgHr" style="font-size:1.45rem; color:var(--theme-green)">-</div>
         <div class="card-subtitle">BPM</div>
       </div>
     </div>
@@ -625,7 +632,7 @@ app.get('/', async (req: Request, res: Response) => {
     let chartInstanceStrainHr = null;
     let chartInstanceWeeklyMileage = null;
 
-    Chart.defaults.color = '#a1a1aa';
+    Chart.defaults.color = '#94a3b8';
     Chart.defaults.font.family = "'Outfit', sans-serif";
 
     function calcPaceDec(durationMs, distKm) {
@@ -684,7 +691,7 @@ app.get('/', async (req: Request, res: Response) => {
         const data = await res.json();
         const runs = data.runs || [];
 
-        // Update KPI Cards
+        // Update KPI Cards using Kilometers (km)
         let totalDistKm = 0;
         let totalDurationMs = 0;
         let totalPaceDistKm = 0;
@@ -766,7 +773,7 @@ app.get('/', async (req: Request, res: Response) => {
             <tr>
               <td><strong>\${dateStr}</strong></td>
               <td>\${r.sport_name}</td>
-              <td><strong style="color:var(--whoop-cyan)">\${distKmStr}</strong></td>
+              <td><span class="badge badge-dist">\${distKmStr}</span></td>
               <td><span class="badge badge-pace">\${paceStr}</span></td>
               <td>\${durationMin} mins</td>
               <td><span class="badge badge-strain">\${r.strain ? Number(r.strain).toFixed(1) : 'N/A'}</span></td>
@@ -779,7 +786,7 @@ app.get('/', async (req: Request, res: Response) => {
         renderCharts(runs);
 
       } catch (err) {
-        tbody.innerHTML = \`<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--whoop-red)">Error loading data: \${err.message}</td></tr>\`;
+        tbody.innerHTML = \`<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: #ef4444">Error loading data: \${err.message}</td></tr>\`;
       }
     }
 
@@ -806,7 +813,7 @@ app.get('/', async (req: Request, res: Response) => {
       const strains = chronoRuns.map(r => r.strain ? Number(r.strain) : null);
       const avgHrs = chronoRuns.map(r => r.average_heart_rate ? Number(r.average_heart_rate) : null);
 
-      // --- Chart 1: Distance & Pace Progression ---
+      // --- Chart 1: Distance & Pace Progression (Light Blue Theme) ---
       if (chartInstanceDistancePace) chartInstanceDistancePace.destroy();
       const ctx1 = document.getElementById('chartDistancePace').getContext('2d');
       chartInstanceDistancePace = new Chart(ctx1, {
@@ -817,8 +824,8 @@ app.get('/', async (req: Request, res: Response) => {
             {
               label: 'Distance (km)',
               data: distances,
-              backgroundColor: 'rgba(255, 0, 51, 0.45)',
-              borderColor: '#ff0033',
+              backgroundColor: 'rgba(0, 198, 255, 0.45)',
+              borderColor: '#00c6ff',
               borderWidth: 2,
               borderRadius: 6,
               yAxisID: 'yDist',
@@ -856,7 +863,7 @@ app.get('/', async (req: Request, res: Response) => {
             yDist: {
               type: 'linear',
               position: 'left',
-              title: { display: true, text: 'Distance (km)', color: '#ff0033' },
+              title: { display: true, text: 'Distance (km)', color: '#00c6ff' },
               grid: { color: 'rgba(255,255,255,0.05)' }
             },
             yPace: {
@@ -894,7 +901,7 @@ app.get('/', async (req: Request, res: Response) => {
           labels: ['Zone 1 (Recovery)', 'Zone 2 (Aerobic Base)', 'Zone 3 (Tempo)', 'Zone 4 (Threshold)', 'Zone 5 (Anaerobic Peak)'],
           datasets: [{
             data: [z1, z2, z3, z4, z5],
-            backgroundColor: ['#94a3b8', '#00e676', '#f59e0b', '#ff7e36', '#ff0033'],
+            backgroundColor: ['#94a3b8', '#00e676', '#f59e0b', '#ff7e36', '#00c6ff'],
             borderWidth: 0,
             hoverOffset: 8
           }]
@@ -915,7 +922,7 @@ app.get('/', async (req: Request, res: Response) => {
         }
       });
 
-      // --- Chart 3: Strain vs Heart Rate Efficiency ---
+      // --- Chart 3: Strain vs Heart Rate Efficiency (Light Blue & Sky Theme) ---
       if (chartInstanceStrainHr) chartInstanceStrainHr.destroy();
       const ctx3 = document.getElementById('chartStrainHr').getContext('2d');
       chartInstanceStrainHr = new Chart(ctx3, {
@@ -926,8 +933,8 @@ app.get('/', async (req: Request, res: Response) => {
             {
               label: 'WHOOP Strain (0-21)',
               data: strains,
-              borderColor: '#ff0033',
-              backgroundColor: 'rgba(255, 0, 51, 0.1)',
+              borderColor: '#00c6ff',
+              backgroundColor: 'rgba(0, 198, 255, 0.1)',
               borderWidth: 3,
               tension: 0.3,
               fill: true,
@@ -954,7 +961,7 @@ app.get('/', async (req: Request, res: Response) => {
               position: 'left',
               min: 0,
               max: 21,
-              title: { display: true, text: 'Strain (0-21)', color: '#ff0033' },
+              title: { display: true, text: 'Strain (0-21)', color: '#00c6ff' },
               grid: { color: 'rgba(255,255,255,0.05)' }
             },
             yHr: {
@@ -967,13 +974,12 @@ app.get('/', async (req: Request, res: Response) => {
         }
       });
 
-      // --- Chart 4: Weekly Mileage Progression ---
+      // --- Chart 4: Weekly Mileage Progression (Electric Light Blue Theme) ---
       const weeklyMap = {};
       chronoRuns.forEach(r => {
         const d = new Date(r.start_time);
-        // Get start of week (Sunday or Monday)
         const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday as start
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
         const monday = new Date(d.setDate(diff));
         const weekKey = (monday.getMonth() + 1) + '/' + monday.getDate();
 
@@ -993,8 +999,8 @@ app.get('/', async (req: Request, res: Response) => {
           datasets: [{
             label: 'Total Distance (km)',
             data: weekDistances,
-            backgroundColor: 'rgba(0, 242, 254, 0.45)',
-            borderColor: '#00f2fe',
+            backgroundColor: 'rgba(56, 189, 248, 0.5)',
+            borderColor: '#38bdf8',
             borderWidth: 2,
             borderRadius: 8
           }]
@@ -1014,7 +1020,7 @@ app.get('/', async (req: Request, res: Response) => {
           scales: {
             x: { grid: { color: 'rgba(255,255,255,0.05)' } },
             y: {
-              title: { display: true, text: 'Weekly Distance (km)', color: '#00f2fe' },
+              title: { display: true, text: 'Weekly Distance (km)', color: '#38bdf8' },
               grid: { color: 'rgba(255,255,255,0.05)' }
             }
           }
