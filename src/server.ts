@@ -57,6 +57,7 @@ app.get('/', async (req: Request, res: Response) => {
     :root {
       --bg-main: #f7f7fa;
       --nav-bg: #ffffff;
+      --nav-border: #e6e6e8;
       --card-bg: #ffffff;
       --card-border: #e2e8f0;
       --theme-blue: #0080ff;
@@ -66,6 +67,26 @@ app.get('/', async (req: Request, res: Response) => {
       --text-dark: #1e293b;
       --text-muted: #64748b;
       --text-dim: #94a3b8;
+      --subtle-bg: #f8fafc;
+      --badge-bg: #f0f7ff;
+      --badge-border: #cce7ff;
+    }
+
+    body.dark-mode {
+      --bg-main: #070a12;
+      --nav-bg: #0f172a;
+      --nav-border: rgba(255, 255, 255, 0.1);
+      --card-bg: rgba(15, 23, 42, 0.85);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --theme-blue: #00c6ff;
+      --theme-blue-hover: #0099cc;
+      --theme-sky: #38bdf8;
+      --text-dark: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --subtle-bg: rgba(255, 255, 255, 0.04);
+      --badge-bg: rgba(0, 198, 255, 0.12);
+      --badge-border: rgba(0, 198, 255, 0.25);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -78,16 +99,18 @@ app.get('/', async (req: Request, res: Response) => {
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      transition: background-color 0.25s ease, color 0.25s ease;
     }
 
     /* Strava-Style Top Navigation Bar */
     .top-navbar {
       background-color: var(--nav-bg);
-      border-bottom: 1px solid #e6e6e8;
+      border-bottom: 1px solid var(--nav-border);
       position: sticky;
       top: 0;
       z-index: 1000;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+      transition: background-color 0.25s ease, border-color 0.25s ease;
     }
 
     .nav-container {
@@ -144,7 +167,7 @@ app.get('/', async (req: Request, res: Response) => {
     .top-tab-btn {
       background: transparent;
       border: none;
-      color: #475569;
+      color: var(--text-muted);
       font-size: 0.92rem;
       font-weight: 600;
       height: 62px;
@@ -174,6 +197,26 @@ app.get('/', async (req: Request, res: Response) => {
       gap: 12px;
     }
 
+    .theme-toggle-btn {
+      background: var(--subtle-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-dark);
+      padding: 7px 13px;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .theme-toggle-btn:hover {
+      border-color: var(--theme-blue);
+      color: var(--theme-blue);
+    }
+
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -181,10 +224,10 @@ app.get('/', async (req: Request, res: Response) => {
       font-size: 0.78rem;
       font-weight: 600;
       color: var(--text-muted);
-      background: #f1f5f9;
+      background: var(--subtle-bg);
       padding: 5px 12px;
       border-radius: 20px;
-      border: 1px solid #e2e8f0;
+      border: 1px solid var(--card-border);
     }
 
     .status-dot {
@@ -220,12 +263,12 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .strava-btn-secondary {
-      background-color: #f1f5f9;
+      background-color: var(--subtle-bg);
       color: var(--text-dark);
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--card-border);
     }
     .strava-btn-secondary:hover {
-      background-color: #e2e8f0;
+      border-color: var(--theme-blue);
     }
 
     /* Main Content Wrapper */
@@ -273,8 +316,8 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .preset-btn {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
+      background: var(--subtle-bg);
+      border: 1px solid var(--card-border);
       color: var(--text-muted);
       padding: 6px 14px;
       border-radius: 4px;
@@ -298,8 +341,8 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .date-inputs input[type="date"] {
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
       color: var(--text-dark);
       padding: 6px 10px;
       border-radius: 4px;
@@ -310,8 +353,8 @@ app.get('/', async (req: Request, res: Response) => {
 
     /* Automated Insights Card */
     .insights-card {
-      background: #f0f7ff;
-      border: 1px solid #bbe3ff;
+      background: var(--badge-bg);
+      border: 1px solid var(--badge-border);
       border-radius: 12px;
       padding: 1.25rem 1.5rem;
       margin-bottom: 1.5rem;
@@ -366,7 +409,7 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .progress-bar-bg {
-      background: #e2e8f0;
+      background: var(--subtle-bg);
       height: 10px;
       border-radius: 6px;
       overflow: hidden;
@@ -408,8 +451,8 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .pr-card {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
+      background: var(--subtle-bg);
+      border: 1px solid var(--card-border);
       border-radius: 10px;
       padding: 1.1rem;
     }
@@ -521,8 +564,8 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .chart-zoom-btn {
-      background: #f1f5f9;
-      border: 1px solid #cbd5e1;
+      background: var(--subtle-bg);
+      border: 1px solid var(--card-border);
       color: var(--text-dark);
       padding: 5px 12px;
       border-radius: 4px;
@@ -569,7 +612,8 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .modal-container {
-      background: #ffffff;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
       border-radius: 16px;
       width: 94vw;
       max-width: 1100px;
@@ -606,8 +650,8 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .modal-btn {
-      background: #f1f5f9;
-      border: 1px solid #cbd5e1;
+      background: var(--subtle-bg);
+      border: 1px solid var(--card-border);
       color: var(--text-dark);
       padding: 6px 12px;
       border-radius: 4px;
@@ -618,7 +662,7 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .modal-btn:hover {
-      background: #e2e8f0;
+      border-color: var(--theme-blue);
     }
 
     .modal-btn-close {
@@ -672,7 +716,7 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     th {
-      background: #f8fafc;
+      background: var(--subtle-bg);
       padding: 0.9rem 1.25rem;
       font-size: 0.78rem;
       text-transform: uppercase;
@@ -684,7 +728,7 @@ app.get('/', async (req: Request, res: Response) => {
 
     td {
       padding: 0.95rem 1.25rem;
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid var(--card-border);
       font-size: 0.9rem;
       font-weight: 500;
       color: var(--text-dark);
@@ -695,7 +739,7 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     tr:hover td {
-      background: #f8fafc;
+      background: var(--subtle-bg);
     }
 
     .badge {
@@ -704,15 +748,15 @@ app.get('/', async (req: Request, res: Response) => {
       border-radius: 4px;
       font-size: 0.78rem;
       font-weight: 700;
-      background: #f0f7ff;
+      background: var(--badge-bg);
       color: var(--theme-blue);
-      border: 1px solid #cce7ff;
+      border: 1px solid var(--badge-border);
     }
 
     .badge-dist {
-      background: #e6f3ff;
+      background: var(--badge-bg);
       color: var(--theme-blue);
-      border: 1px solid #b3dcff;
+      border: 1px solid var(--badge-border);
     }
   </style>
 </head>
@@ -734,8 +778,11 @@ app.get('/', async (req: Request, res: Response) => {
         </div>
       </div>
 
-      <!-- Top Right Actions Position (Re-authenticate & Sync Data) -->
+      <!-- Top Right Actions Position (Theme Toggle, Status, Re-authenticate & Sync Data) -->
       <div class="nav-right">
+        <button onclick="toggleTheme()" class="theme-toggle-btn" id="themeToggleBtn">
+          <span id="themeToggleIcon">🌙</span> <span id="themeToggleText">Dark</span>
+        </button>
         <div class="status-badge">
           <div class="status-dot ${hasTokenRecord ? 'active' : 'inactive'}"></div>
           ${hasTokenRecord ? 'Connected' : 'Not Connected'}
@@ -968,8 +1015,36 @@ app.get('/', async (req: Request, res: Response) => {
     let chartInstanceWeeklyMileage = null;
     let modalChartInstance = null;
 
-    Chart.defaults.color = '#64748b';
-    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+    // Theme Management
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        document.getElementById('themeToggleIcon').innerText = '☀️';
+        document.getElementById('themeToggleText').innerText = 'Light';
+        Chart.defaults.color = '#94a3b8';
+      } else {
+        document.body.classList.remove('dark-mode');
+        document.getElementById('themeToggleIcon').innerText = '🌙';
+        document.getElementById('themeToggleText').innerText = 'Dark';
+        Chart.defaults.color = '#64748b';
+      }
+    }
+
+    function toggleTheme() {
+      const isDark = document.body.classList.toggle('dark-mode');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      
+      document.getElementById('themeToggleIcon').innerText = isDark ? '☀️' : '🌙';
+      document.getElementById('themeToggleText').innerText = isDark ? 'Light' : 'Dark';
+      Chart.defaults.color = isDark ? '#94a3b8' : '#64748b';
+      
+      if (allRunsCache.length > 0) {
+        renderCharts(allRunsCache);
+      }
+    }
+
+    initTheme();
 
     function switchTab(tabId, btnEl) {
       document.querySelectorAll('.top-tab-btn').forEach(b => b.classList.remove('active'));
@@ -1294,6 +1369,9 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     function renderCharts(runs) {
+      const isDark = document.body.classList.contains('dark-mode');
+      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+
       const chronoRuns = [...runs].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
       const labels = chronoRuns.map(r => {
@@ -1335,8 +1413,8 @@ app.get('/', async (req: Request, res: Response) => {
             {
               label: 'Distance (km)',
               data: distances,
-              backgroundColor: 'rgba(0, 128, 255, 0.45)',
-              borderColor: '#0080ff',
+              backgroundColor: isDark ? 'rgba(0, 198, 255, 0.45)' : 'rgba(0, 128, 255, 0.45)',
+              borderColor: isDark ? '#00c6ff' : '#0080ff',
               borderWidth: 2,
               borderRadius: 4,
               yAxisID: 'yDist',
@@ -1345,8 +1423,8 @@ app.get('/', async (req: Request, res: Response) => {
               label: 'Pace (min/km)',
               data: paces,
               type: 'line',
-              borderColor: '#00a3ff',
-              backgroundColor: '#00a3ff',
+              borderColor: isDark ? '#38bdf8' : '#00a3ff',
+              backgroundColor: isDark ? '#38bdf8' : '#00a3ff',
               borderWidth: 3,
               tension: 0.3,
               pointRadius: 4,
@@ -1371,18 +1449,18 @@ app.get('/', async (req: Request, res: Response) => {
             }
           },
           scales: {
-            x: { grid: { color: 'rgba(0,0,0,0.05)' } },
+            x: { grid: { color: gridColor } },
             yDist: {
               type: 'linear',
               position: 'left',
-              title: { display: true, text: 'Distance (km)', color: '#0080ff' },
-              grid: { color: 'rgba(0,0,0,0.05)' }
+              title: { display: true, text: 'Distance (km)', color: isDark ? '#00c6ff' : '#0080ff' },
+              grid: { color: gridColor }
             },
             yPace: {
               type: 'linear',
               position: 'right',
               reverse: true,
-              title: { display: true, text: 'Pace (min/km - Faster)', color: '#00a3ff' },
+              title: { display: true, text: 'Pace (min/km - Faster)', color: isDark ? '#38bdf8' : '#00a3ff' },
               grid: { drawOnChartArea: false },
               ticks: {
                 callback: function(val) { return formatPaceDecToString(val); }
@@ -1441,8 +1519,8 @@ app.get('/', async (req: Request, res: Response) => {
             {
               label: 'WHOOP Strain (0-21)',
               data: strains,
-              borderColor: '#0080ff',
-              backgroundColor: 'rgba(0, 128, 255, 0.08)',
+              borderColor: isDark ? '#00c6ff' : '#0080ff',
+              backgroundColor: isDark ? 'rgba(0, 198, 255, 0.1)' : 'rgba(0, 128, 255, 0.08)',
               borderWidth: 3,
               tension: 0.3,
               fill: true,
@@ -1451,7 +1529,7 @@ app.get('/', async (req: Request, res: Response) => {
             {
               label: 'Avg Heart Rate (BPM)',
               data: avgHrs,
-              borderColor: '#00a3ff',
+              borderColor: isDark ? '#38bdf8' : '#00a3ff',
               borderWidth: 2.5,
               tension: 0.3,
               pointRadius: 4,
@@ -1464,19 +1542,19 @@ app.get('/', async (req: Request, res: Response) => {
           maintainAspectRatio: false,
           plugins: { zoom: zoomPluginConfig },
           scales: {
-            x: { grid: { color: 'rgba(0,0,0,0.05)' } },
+            x: { grid: { color: gridColor } },
             yStrain: {
               type: 'linear',
               position: 'left',
               min: 0,
               max: 21,
-              title: { display: true, text: 'Strain (0-21)', color: '#0080ff' },
-              grid: { color: 'rgba(0,0,0,0.05)' }
+              title: { display: true, text: 'Strain (0-21)', color: isDark ? '#00c6ff' : '#0080ff' },
+              grid: { color: gridColor }
             },
             yHr: {
               type: 'linear',
               position: 'right',
-              title: { display: true, text: 'Avg Heart Rate (BPM)', color: '#00a3ff' },
+              title: { display: true, text: 'Avg Heart Rate (BPM)', color: isDark ? '#38bdf8' : '#00a3ff' },
               grid: { drawOnChartArea: false }
             }
           }
@@ -1508,8 +1586,8 @@ app.get('/', async (req: Request, res: Response) => {
           datasets: [{
             label: 'Total Distance (km)',
             data: weekDistances,
-            backgroundColor: 'rgba(0, 163, 255, 0.45)',
-            borderColor: '#00a3ff',
+            backgroundColor: isDark ? 'rgba(56, 189, 248, 0.45)' : 'rgba(0, 163, 255, 0.45)',
+            borderColor: isDark ? '#38bdf8' : '#00a3ff',
             borderWidth: 2,
             borderRadius: 4
           }]
@@ -1526,10 +1604,10 @@ app.get('/', async (req: Request, res: Response) => {
             }
           },
           scales: {
-            x: { grid: { color: 'rgba(0,0,0,0.05)' } },
+            x: { grid: { color: gridColor } },
             y: {
-              title: { display: true, text: 'Weekly Distance (km)', color: '#00a3ff' },
-              grid: { color: 'rgba(0,0,0,0.05)' }
+              title: { display: true, text: 'Weekly Distance (km)', color: isDark ? '#38bdf8' : '#00a3ff' },
+              grid: { color: gridColor }
             }
           }
         }
