@@ -64,10 +64,6 @@ app.get('/', async (req: Request, res: Response) => {
       --theme-sky: #38bdf8;
       --theme-cyan: #06b6d4;
       --theme-green: #00e676;
-      --theme-purple: #a78bfa;
-      --theme-pink: #ec4899;
-      --theme-gold: #f59e0b;
-      --theme-orange: #ff7e36;
       --text-white: #ffffff;
       --text-gray: #94a3b8;
       --text-dim: #64748b;
@@ -273,7 +269,7 @@ app.get('/', async (req: Request, res: Response) => {
       font-weight: 600;
     }
 
-    /* Metric Cards Grid */
+    /* Metric Cards Grid - Unified Single Color Theme */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
@@ -309,6 +305,7 @@ app.get('/', async (req: Request, res: Response) => {
       font-weight: 900;
       letter-spacing: -0.8px;
       line-height: 1.1;
+      color: var(--theme-blue) !important;
     }
 
     .card-subtitle {
@@ -554,36 +551,15 @@ app.get('/', async (req: Request, res: Response) => {
       font-size: 0.78rem;
       font-weight: 800;
       letter-spacing: 0.3px;
+      background: rgba(0, 198, 255, 0.12);
+      color: var(--theme-blue);
+      border: 1px solid rgba(0, 198, 255, 0.25);
     }
 
     .badge-dist {
       background: rgba(0, 198, 255, 0.15);
       color: var(--theme-blue);
       border: 1px solid rgba(0, 198, 255, 0.3);
-    }
-
-    .badge-strain {
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--theme-sky);
-      border: 1px solid rgba(56, 189, 248, 0.3);
-    }
-
-    .badge-hr {
-      background: rgba(255, 126, 54, 0.15);
-      color: var(--theme-orange);
-      border: 1px solid rgba(255, 126, 54, 0.3);
-    }
-
-    .badge-pace {
-      background: rgba(236, 72, 153, 0.15);
-      color: var(--theme-pink);
-      border: 1px solid rgba(236, 72, 153, 0.3);
-    }
-
-    .badge-cal {
-      background: rgba(245, 158, 11, 0.15);
-      color: var(--theme-gold);
-      border: 1px solid rgba(245, 158, 11, 0.3);
     }
   </style>
 </head>
@@ -628,41 +604,41 @@ app.get('/', async (req: Request, res: Response) => {
       </div>
     </div>
 
-    <!-- Summary Metrics Grid -->
+    <!-- Summary Metrics Grid (Clean Single Light Blue Theme) -->
     <div class="grid">
       <div class="card">
         <div class="card-title">Run Count</div>
-        <div class="card-value" id="kpiRunsCount" style="color: var(--theme-sky)">-</div>
+        <div class="card-value" id="kpiRunsCount">-</div>
         <div class="card-subtitle">Sessions</div>
       </div>
       <div class="card">
         <div class="card-title">Total Distance</div>
-        <div class="card-value" id="kpiDistance" style="color: var(--theme-blue)">-</div>
+        <div class="card-value" id="kpiDistance">-</div>
         <div class="card-subtitle">Kilometers</div>
       </div>
       <div class="card">
         <div class="card-title">Avg Pace</div>
-        <div class="card-value" id="kpiAvgPace" style="color: var(--theme-pink)">-</div>
+        <div class="card-value" id="kpiAvgPace">-</div>
         <div class="card-subtitle">min / km</div>
       </div>
       <div class="card">
         <div class="card-title">Total Duration</div>
-        <div class="card-value" id="kpiDuration" style="color: var(--theme-purple)">-</div>
+        <div class="card-value" id="kpiDuration">-</div>
         <div class="card-subtitle">Hours & Mins</div>
       </div>
       <div class="card">
         <div class="card-title">Total Calories</div>
-        <div class="card-value" id="kpiCalories" style="color: var(--theme-gold)">-</div>
+        <div class="card-value" id="kpiCalories">-</div>
         <div class="card-subtitle">kcal burned</div>
       </div>
       <div class="card">
         <div class="card-title">Avg Strain</div>
-        <div class="card-value" id="kpiAvgStrain" style="color: var(--theme-orange)">-</div>
+        <div class="card-value" id="kpiAvgStrain">-</div>
         <div class="card-subtitle">WHOOP 0-21</div>
       </div>
       <div class="card">
         <div class="card-title">Avg / Max HR</div>
-        <div class="card-value" id="kpiAvgHr" style="font-size:1.45rem; color:var(--theme-green)">-</div>
+        <div class="card-value" id="kpiAvgHr" style="font-size:1.45rem;">-</div>
         <div class="card-subtitle">BPM</div>
       </div>
     </div>
@@ -911,11 +887,11 @@ app.get('/', async (req: Request, res: Response) => {
               <td><strong>\${dateStr}</strong></td>
               <td>\${r.sport_name}</td>
               <td><span class="badge badge-dist">\${distKmStr}</span></td>
-              <td><span class="badge badge-pace">\${paceStr}</span></td>
+              <td><span class="badge">\${paceStr}</span></td>
               <td>\${durationMin} mins</td>
-              <td><span class="badge badge-strain">\${r.strain ? Number(r.strain).toFixed(1) : 'N/A'}</span></td>
-              <td><span class="badge badge-hr">\${r.average_heart_rate || 'N/A'} / \${r.max_heart_rate || 'N/A'} bpm</span></td>
-              <td><span class="badge badge-cal">\${calStr}</span></td>
+              <td><span class="badge">\${r.strain ? Number(r.strain).toFixed(1) : 'N/A'}</span></td>
+              <td><span class="badge">\${r.average_heart_rate || 'N/A'} / \${r.max_heart_rate || 'N/A'} bpm</span></td>
+              <td><span class="badge">\${calStr}</span></td>
             </tr>
           \`;
         }).join('');
@@ -979,8 +955,8 @@ app.get('/', async (req: Request, res: Response) => {
               label: 'Pace (min/km)',
               data: paces,
               type: 'line',
-              borderColor: '#ec4899',
-              backgroundColor: '#ec4899',
+              borderColor: '#38bdf8',
+              backgroundColor: '#38bdf8',
               borderWidth: 3,
               tension: 0.3,
               pointRadius: 4,
@@ -1016,7 +992,7 @@ app.get('/', async (req: Request, res: Response) => {
               type: 'linear',
               position: 'right',
               reverse: true,
-              title: { display: true, text: 'Pace (min/km - Faster)', color: '#ec4899' },
+              title: { display: true, text: 'Pace (min/km - Faster)', color: '#38bdf8' },
               grid: { drawOnChartArea: false },
               ticks: {
                 callback: function(val) { return formatPaceDecToString(val); }
@@ -1045,7 +1021,7 @@ app.get('/', async (req: Request, res: Response) => {
           labels: ['Zone 1 (Recovery)', 'Zone 2 (Aerobic Base)', 'Zone 3 (Tempo)', 'Zone 4 (Threshold)', 'Zone 5 (Anaerobic Peak)'],
           datasets: [{
             data: [z1, z2, z3, z4, z5],
-            backgroundColor: ['#94a3b8', '#00e676', '#f59e0b', '#ff7e36', '#00c6ff'],
+            backgroundColor: ['#64748b', '#0284c7', '#38bdf8', '#00c6ff', '#0072ff'],
             borderWidth: 0,
             hoverOffset: 8
           }]
@@ -1085,7 +1061,7 @@ app.get('/', async (req: Request, res: Response) => {
             {
               label: 'Avg Heart Rate (BPM)',
               data: avgHrs,
-              borderColor: '#ff7e36',
+              borderColor: '#38bdf8',
               borderWidth: 2.5,
               tension: 0.3,
               pointRadius: 4,
@@ -1110,7 +1086,7 @@ app.get('/', async (req: Request, res: Response) => {
             yHr: {
               type: 'linear',
               position: 'right',
-              title: { display: true, text: 'Avg Heart Rate (BPM)', color: '#ff7e36' },
+              title: { display: true, text: 'Avg Heart Rate (BPM)', color: '#38bdf8' },
               grid: { drawOnChartArea: false }
             }
           }
