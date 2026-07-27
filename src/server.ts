@@ -49,7 +49,7 @@ app.get('/', async (req: Request, res: Response) => {
   <title>Run Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
@@ -72,7 +72,7 @@ app.get('/', async (req: Request, res: Response) => {
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background-color: var(--bg-dark);
       background-image: 
         radial-gradient(at 15% 15%, rgba(0, 198, 255, 0.18) 0px, transparent 45%),
@@ -81,6 +81,8 @@ app.get('/', async (req: Request, res: Response) => {
       min-height: 100vh;
       padding: 1.5rem 1rem;
       line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     .container {
@@ -114,7 +116,7 @@ app.get('/', async (req: Request, res: Response) => {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 900;
+      font-weight: 800;
       font-size: 1.5rem;
       letter-spacing: -1px;
       color: white;
@@ -122,10 +124,10 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .title-group h1 {
-      font-size: 1.7rem;
-      font-weight: 900;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      text-transform: none;
       background: linear-gradient(to right, #ffffff, #cbd5e1);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -146,8 +148,7 @@ app.get('/', async (req: Request, res: Response) => {
       border-radius: 24px;
       font-size: 0.82rem;
       font-weight: 700;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
+      letter-spacing: -0.01em;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--card-border);
     }
@@ -168,10 +169,9 @@ app.get('/', async (req: Request, res: Response) => {
       gap: 8px;
       padding: 10px 18px;
       border-radius: 12px;
-      font-weight: 800;
+      font-weight: 700;
       font-size: 0.85rem;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
+      letter-spacing: -0.01em;
       cursor: pointer;
       text-decoration: none;
       transition: all 0.25s ease;
@@ -215,10 +215,9 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .filter-title {
-      font-size: 0.82rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
       color: var(--text-gray);
       display: flex;
       align-items: center;
@@ -239,7 +238,7 @@ app.get('/', async (req: Request, res: Response) => {
       border-radius: 12px;
       font-size: 0.82rem;
       font-weight: 700;
-      letter-spacing: 0.5px;
+      letter-spacing: -0.01em;
       cursor: pointer;
       transition: all 0.2s ease;
     }
@@ -269,7 +268,7 @@ app.get('/', async (req: Request, res: Response) => {
       font-weight: 600;
     }
 
-    /* Metric Cards Grid - Unified Single Color Theme */
+    /* Metric Cards Grid - Plus Jakarta Sans Bold Typography */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
@@ -292,18 +291,18 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .card-title {
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       color: var(--text-dim);
       text-transform: uppercase;
-      letter-spacing: 1.2px;
-      font-weight: 800;
+      letter-spacing: 0.5px;
+      font-weight: 700;
       margin-bottom: 0.4rem;
     }
 
     .card-value {
-      font-size: 1.85rem;
-      font-weight: 900;
-      letter-spacing: -0.8px;
+      font-size: 1.95rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
       line-height: 1.1;
       color: var(--theme-blue) !important;
     }
@@ -347,10 +346,9 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .chart-title {
-      font-size: 0.95rem;
+      font-size: 1.05rem;
       font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: -0.02em;
       color: var(--text-white);
       display: flex;
       align-items: center;
@@ -364,8 +362,8 @@ app.get('/', async (req: Request, res: Response) => {
       padding: 6px 12px;
       border-radius: 10px;
       font-size: 0.78rem;
-      font-weight: 800;
-      letter-spacing: 0.5px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
       cursor: pointer;
       transition: all 0.2s ease;
       display: inline-flex;
@@ -436,10 +434,9 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .modal-title {
-      font-size: 1.15rem;
-      font-weight: 900;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
       color: var(--text-white);
     }
 
@@ -456,7 +453,7 @@ app.get('/', async (req: Request, res: Response) => {
       padding: 8px 14px;
       border-radius: 10px;
       font-size: 0.82rem;
-      font-weight: 800;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.2s ease;
     }
@@ -492,10 +489,9 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .section-title {
-      font-size: 1.2rem;
-      font-weight: 900;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -521,10 +517,10 @@ app.get('/', async (req: Request, res: Response) => {
     th {
       background: rgba(255, 255, 255, 0.02);
       padding: 1rem 1.25rem;
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
-      font-weight: 800;
+      letter-spacing: 0.8px;
+      font-weight: 700;
       color: var(--text-dim);
       border-bottom: 1px solid var(--card-border);
     }
@@ -532,7 +528,7 @@ app.get('/', async (req: Request, res: Response) => {
     td {
       padding: 1rem 1.25rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      font-size: 0.9rem;
+      font-size: 0.92rem;
       font-weight: 500;
     }
 
@@ -549,8 +545,8 @@ app.get('/', async (req: Request, res: Response) => {
       padding: 5px 10px;
       border-radius: 8px;
       font-size: 0.78rem;
-      font-weight: 800;
-      letter-spacing: 0.3px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
       background: rgba(0, 198, 255, 0.12);
       color: var(--theme-blue);
       border: 1px solid rgba(0, 198, 255, 0.25);
@@ -569,7 +565,7 @@ app.get('/', async (req: Request, res: Response) => {
       <div class="logo-section">
         <div class="logo-badge">R</div>
         <div class="title-group">
-          <h1>RUN TRACKER</h1>
+          <h1>Run Tracker</h1>
         </div>
       </div>
       <div class="header-actions">
@@ -604,7 +600,7 @@ app.get('/', async (req: Request, res: Response) => {
       </div>
     </div>
 
-    <!-- Summary Metrics Grid (Clean Single Light Blue Theme) -->
+    <!-- Summary Metrics Grid -->
     <div class="grid">
       <div class="card">
         <div class="card-title">Run Count</div>
@@ -746,7 +742,7 @@ app.get('/', async (req: Request, res: Response) => {
     let modalChartInstance = null;
 
     Chart.defaults.color = '#94a3b8';
-    Chart.defaults.font.family = "'Outfit', sans-serif";
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
 
     function calcPaceDec(durationMs, distKm) {
       if (!distKm || distKm <= 0 || !durationMs) return null;
