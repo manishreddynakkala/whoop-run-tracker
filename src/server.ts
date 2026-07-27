@@ -610,10 +610,10 @@ app.get('/', async (req: Request, res: Response) => {
           ${hasTokenRecord ? 'Authenticated' : 'Not Connected'}
         </div>
         <a href="/auth/login" class="btn btn-secondary">
-          ${hasTokenRecord ? '🔑 Re-auth' : '🔗 Connect'}
+          ${hasTokenRecord ? 'Re-authenticate' : 'Connect Account'}
         </a>
         <button onclick="triggerSync()" class="btn btn-primary" id="syncBtn">
-          ⚡ Sync Data
+          Sync Data
         </button>
       </div>
     </header>
@@ -621,7 +621,7 @@ app.get('/', async (req: Request, res: Response) => {
     <!-- Date Period Filter Controls -->
     <div class="filter-bar">
       <div class="filter-title">
-        ⚡ Select Period:
+        Select Period:
       </div>
       <div class="preset-group">
         <button class="preset-btn" onclick="selectPreset('7d', this)">7 Days</button>
@@ -680,8 +680,8 @@ app.get('/', async (req: Request, res: Response) => {
       <!-- Chart 1: Distance & Pace Trend -->
       <div class="chart-card">
         <div class="chart-header">
-          <div class="chart-title">📈 Distance & Pace Progression</div>
-          <button class="chart-zoom-btn" onclick="openZoomModal('chartDistancePace', 'Distance & Pace Progression')">🔍 Zoom / Expand</button>
+          <div class="chart-title">Distance & Pace Progression</div>
+          <button class="chart-zoom-btn" onclick="openZoomModal('chartDistancePace', 'Distance & Pace Progression')">Expand / Zoom</button>
         </div>
         <div class="chart-body">
           <canvas id="chartDistancePace"></canvas>
@@ -691,8 +691,8 @@ app.get('/', async (req: Request, res: Response) => {
       <!-- Chart 2: Heart Rate Zone Distribution -->
       <div class="chart-card">
         <div class="chart-header">
-          <div class="chart-title">❤️ Heart Rate Zone Breakdown (Zone 1-5)</div>
-          <button class="chart-zoom-btn" onclick="openZoomModal('chartHrZones', 'Heart Rate Zone Breakdown')">🔍 Zoom / Expand</button>
+          <div class="chart-title">Heart Rate Zone Breakdown (Zone 1-5)</div>
+          <button class="chart-zoom-btn" onclick="openZoomModal('chartHrZones', 'Heart Rate Zone Breakdown')">Expand / Zoom</button>
         </div>
         <div class="chart-body">
           <canvas id="chartHrZones"></canvas>
@@ -702,8 +702,8 @@ app.get('/', async (req: Request, res: Response) => {
       <!-- Chart 3: Strain vs Heart Rate Efficiency -->
       <div class="chart-card">
         <div class="chart-header">
-          <div class="chart-title">⚡ Strain vs Heart Rate Efficiency</div>
-          <button class="chart-zoom-btn" onclick="openZoomModal('chartStrainHr', 'Strain vs Heart Rate Efficiency')">🔍 Zoom / Expand</button>
+          <div class="chart-title">Strain vs Heart Rate Efficiency</div>
+          <button class="chart-zoom-btn" onclick="openZoomModal('chartStrainHr', 'Strain vs Heart Rate Efficiency')">Expand / Zoom</button>
         </div>
         <div class="chart-body">
           <canvas id="chartStrainHr"></canvas>
@@ -713,8 +713,8 @@ app.get('/', async (req: Request, res: Response) => {
       <!-- Chart 4: Weekly Mileage Progression -->
       <div class="chart-card">
         <div class="chart-header">
-          <div class="chart-title">📊 Weekly Mileage Progression</div>
-          <button class="chart-zoom-btn" onclick="openZoomModal('chartWeeklyMileage', 'Weekly Mileage Progression')">🔍 Zoom / Expand</button>
+          <div class="chart-title">Weekly Mileage Progression</div>
+          <button class="chart-zoom-btn" onclick="openZoomModal('chartWeeklyMileage', 'Weekly Mileage Progression')">Expand / Zoom</button>
         </div>
         <div class="chart-body">
           <canvas id="chartWeeklyMileage"></canvas>
@@ -725,7 +725,7 @@ app.get('/', async (req: Request, res: Response) => {
     <!-- Running Activities Table -->
     <div class="section-header">
       <div class="section-title">
-        🏃 Running Performance History <span id="periodLabel" style="font-size:0.85rem; font-weight:500; color:var(--text-dim)">(All Time)</span>
+        Running Performance History <span id="periodLabel" style="font-size:0.85rem; font-weight:500; color:var(--text-dim)">(All Time)</span>
       </div>
     </div>
 
@@ -756,10 +756,10 @@ app.get('/', async (req: Request, res: Response) => {
       <div class="modal-header">
         <div class="modal-title" id="modalChartTitle">Chart Detailed View</div>
         <div class="modal-controls">
-          <button class="modal-btn" onclick="zoomInModalChart()">🔍 Zoom In (+)</button>
-          <button class="modal-btn" onclick="zoomOutModalChart()">🔍 Zoom Out (-)</button>
-          <button class="modal-btn" onclick="resetModalChartZoom()">🔄 Reset</button>
-          <button class="modal-btn modal-btn-close" onclick="closeZoomModal()">✕ Close</button>
+          <button class="modal-btn" onclick="zoomInModalChart()">Zoom In (+)</button>
+          <button class="modal-btn" onclick="zoomOutModalChart()">Zoom Out (-)</button>
+          <button class="modal-btn" onclick="resetModalChartZoom()">Reset</button>
+          <button class="modal-btn modal-btn-close" onclick="closeZoomModal()">Close</button>
         </div>
       </div>
       <div class="modal-body">
@@ -1024,7 +1024,7 @@ app.get('/', async (req: Request, res: Response) => {
               type: 'linear',
               position: 'right',
               reverse: true,
-              title: { display: true, text: 'Pace (min/km - Faster ↑)', color: '#ec4899' },
+              title: { display: true, text: 'Pace (min/km - Faster)', color: '#ec4899' },
               grid: { drawOnChartArea: false },
               ticks: {
                 callback: function(val) { return formatPaceDecToString(val); }
@@ -1292,7 +1292,7 @@ app.get('/', async (req: Request, res: Response) => {
 
     async function triggerSync() {
       const btn = document.getElementById('syncBtn');
-      btn.innerText = '⌛ Syncing...';
+      btn.innerText = 'Syncing...';
       btn.disabled = true;
 
       try {
@@ -1303,7 +1303,7 @@ app.get('/', async (req: Request, res: Response) => {
       } catch (err) {
         alert('Error triggering sync: ' + err.message);
       } finally {
-        btn.innerText = '⚡ Sync Data';
+        btn.innerText = 'Sync Data';
         btn.disabled = false;
       }
     }
@@ -1455,7 +1455,7 @@ app.get('/api/status', async (req: Request, res: Response) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🌐 WHOOP Run Tracker Hub running on http://localhost:${PORT}`);
+  console.log(`WHOOP Run Tracker Hub running on http://localhost:${PORT}`);
 });
 
 export default app;
