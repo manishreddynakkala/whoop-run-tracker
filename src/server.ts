@@ -50,6 +50,8 @@ app.get('/', async (req: Request, res: Response) => {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
   <style>
     :root {
       --bg-dark: #070a12;
@@ -365,10 +367,130 @@ app.get('/', async (req: Request, res: Response) => {
       gap: 8px;
     }
 
+    .chart-zoom-btn {
+      background: rgba(0, 198, 255, 0.12);
+      border: 1px solid rgba(0, 198, 255, 0.3);
+      color: var(--theme-blue);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chart-zoom-btn:hover {
+      background: var(--theme-blue);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 15px var(--theme-blue-glow);
+    }
+
     .chart-body {
       position: relative;
       width: 100%;
       height: 280px;
+    }
+
+    /* Zoom Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(5, 7, 18, 0.88);
+      backdrop-filter: blur(20px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      padding: 1.5rem;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-container {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      width: 94vw;
+      max-width: 1100px;
+      height: 85vh;
+      max-height: 750px;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 30px var(--theme-blue-glow);
+    }
+
+    .modal-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      gap: 12px;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--text-white);
+    }
+
+    .modal-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: var(--text-white);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .modal-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .modal-btn-close {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #ef4444;
+    }
+
+    .modal-btn-close:hover {
+      background: #ef4444;
+      color: white;
+    }
+
+    .modal-body {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
     }
 
     /* Running Activities Table Section */
@@ -559,6 +681,7 @@ app.get('/', async (req: Request, res: Response) => {
       <div class="chart-card">
         <div class="chart-header">
           <div class="chart-title">📈 Distance & Pace Progression</div>
+          <button class="chart-zoom-btn" onclick="openZoomModal('chartDistancePace', 'Distance & Pace Progression')">🔍 Zoom / Expand</button>
         </div>
         <div class="chart-body">
           <canvas id="chartDistancePace"></canvas>
@@ -569,6 +692,7 @@ app.get('/', async (req: Request, res: Response) => {
       <div class="chart-card">
         <div class="chart-header">
           <div class="chart-title">❤️ Heart Rate Zone Breakdown (Zone 1-5)</div>
+          <button class="chart-zoom-btn" onclick="openZoomModal('chartHrZones', 'Heart Rate Zone Breakdown')">🔍 Zoom / Expand</button>
         </div>
         <div class="chart-body">
           <canvas id="chartHrZones"></canvas>
@@ -579,6 +703,7 @@ app.get('/', async (req: Request, res: Response) => {
       <div class="chart-card">
         <div class="chart-header">
           <div class="chart-title">⚡ Strain vs Heart Rate Efficiency</div>
+          <button class="chart-zoom-btn" onclick="openZoomModal('chartStrainHr', 'Strain vs Heart Rate Efficiency')">🔍 Zoom / Expand</button>
         </div>
         <div class="chart-body">
           <canvas id="chartStrainHr"></canvas>
@@ -589,6 +714,7 @@ app.get('/', async (req: Request, res: Response) => {
       <div class="chart-card">
         <div class="chart-header">
           <div class="chart-title">📊 Weekly Mileage Progression</div>
+          <button class="chart-zoom-btn" onclick="openZoomModal('chartWeeklyMileage', 'Weekly Mileage Progression')">🔍 Zoom / Expand</button>
         </div>
         <div class="chart-body">
           <canvas id="chartWeeklyMileage"></canvas>
@@ -624,6 +750,24 @@ app.get('/', async (req: Request, res: Response) => {
     </div>
   </div>
 
+  <!-- Zoom Fullscreen Modal Overlay -->
+  <div class="modal-overlay" id="zoomModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title" id="modalChartTitle">Chart Detailed View</div>
+        <div class="modal-controls">
+          <button class="modal-btn" onclick="zoomInModalChart()">🔍 Zoom In (+)</button>
+          <button class="modal-btn" onclick="zoomOutModalChart()">🔍 Zoom Out (-)</button>
+          <button class="modal-btn" onclick="resetModalChartZoom()">🔄 Reset</button>
+          <button class="modal-btn modal-btn-close" onclick="closeZoomModal()">✕ Close</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <canvas id="modalChartCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+
   <script>
     let currentStartDate = null;
     let currentEndDate = null;
@@ -631,6 +775,7 @@ app.get('/', async (req: Request, res: Response) => {
     let chartInstanceHrZones = null;
     let chartInstanceStrainHr = null;
     let chartInstanceWeeklyMileage = null;
+    let modalChartInstance = null;
 
     Chart.defaults.color = '#94a3b8';
     Chart.defaults.font.family = "'Outfit', sans-serif";
@@ -691,7 +836,7 @@ app.get('/', async (req: Request, res: Response) => {
         const data = await res.json();
         const runs = data.runs || [];
 
-        // Update KPI Cards using Kilometers (km)
+        // Update KPI Cards
         let totalDistKm = 0;
         let totalDurationMs = 0;
         let totalPaceDistKm = 0;
@@ -791,7 +936,6 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     function renderCharts(runs) {
-      // Sort runs chronologically (oldest to newest) for timeline charts
       const chronoRuns = [...runs].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
       const labels = chronoRuns.map(r => {
@@ -813,7 +957,16 @@ app.get('/', async (req: Request, res: Response) => {
       const strains = chronoRuns.map(r => r.strain ? Number(r.strain) : null);
       const avgHrs = chronoRuns.map(r => r.average_heart_rate ? Number(r.average_heart_rate) : null);
 
-      // --- Chart 1: Distance & Pace Progression (Light Blue Theme) ---
+      const zoomPluginConfig = {
+        zoom: {
+          wheel: { enabled: true },
+          pinch: { enabled: true },
+          mode: 'x',
+        },
+        pan: { enabled: true, mode: 'x' }
+      };
+
+      // --- Chart 1: Distance & Pace Progression ---
       if (chartInstanceDistancePace) chartInstanceDistancePace.destroy();
       const ctx1 = document.getElementById('chartDistancePace').getContext('2d');
       chartInstanceDistancePace = new Chart(ctx1, {
@@ -847,6 +1000,7 @@ app.get('/', async (req: Request, res: Response) => {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
+            zoom: zoomPluginConfig,
             tooltip: {
               callbacks: {
                 label: function(context) {
@@ -869,13 +1023,11 @@ app.get('/', async (req: Request, res: Response) => {
             yPace: {
               type: 'linear',
               position: 'right',
-              reverse: true, // Lower pace min/km is faster!
+              reverse: true,
               title: { display: true, text: 'Pace (min/km - Faster ↑)', color: '#ec4899' },
               grid: { drawOnChartArea: false },
               ticks: {
-                callback: function(val) {
-                  return formatPaceDecToString(val);
-                }
+                callback: function(val) { return formatPaceDecToString(val); }
               }
             }
           }
@@ -913,16 +1065,14 @@ app.get('/', async (req: Request, res: Response) => {
             legend: { position: 'right', labels: { boxWidth: 14, font: { size: 11 } } },
             tooltip: {
               callbacks: {
-                label: function(context) {
-                  return ' ' + context.label + ': ' + context.raw + ' mins';
-                }
+                label: function(context) { return ' ' + context.label + ': ' + context.raw + ' mins'; }
               }
             }
           }
         }
       });
 
-      // --- Chart 3: Strain vs Heart Rate Efficiency (Light Blue & Sky Theme) ---
+      // --- Chart 3: Strain vs Heart Rate Efficiency ---
       if (chartInstanceStrainHr) chartInstanceStrainHr.destroy();
       const ctx3 = document.getElementById('chartStrainHr').getContext('2d');
       chartInstanceStrainHr = new Chart(ctx3, {
@@ -954,6 +1104,7 @@ app.get('/', async (req: Request, res: Response) => {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          plugins: { zoom: zoomPluginConfig },
           scales: {
             x: { grid: { color: 'rgba(255,255,255,0.05)' } },
             yStrain: {
@@ -974,7 +1125,7 @@ app.get('/', async (req: Request, res: Response) => {
         }
       });
 
-      // --- Chart 4: Weekly Mileage Progression (Electric Light Blue Theme) ---
+      // --- Chart 4: Weekly Mileage Progression ---
       const weeklyMap = {};
       chronoRuns.forEach(r => {
         const d = new Date(r.start_time);
@@ -1009,11 +1160,10 @@ app.get('/', async (req: Request, res: Response) => {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
+            zoom: zoomPluginConfig,
             tooltip: {
               callbacks: {
-                label: function(context) {
-                  return ' Total Distance: ' + Number(context.raw).toFixed(2) + ' km';
-                }
+                label: function(context) { return ' Total Distance: ' + Number(context.raw).toFixed(2) + ' km'; }
               }
             }
           },
@@ -1026,6 +1176,71 @@ app.get('/', async (req: Request, res: Response) => {
           }
         }
       });
+    }
+
+    // --- Modal Zoom Logic ---
+    function openZoomModal(chartId, title) {
+      let sourceChart = null;
+      if (chartId === 'chartDistancePace') sourceChart = chartInstanceDistancePace;
+      else if (chartId === 'chartHrZones') sourceChart = chartInstanceHrZones;
+      else if (chartId === 'chartStrainHr') sourceChart = chartInstanceStrainHr;
+      else if (chartId === 'chartWeeklyMileage') sourceChart = chartInstanceWeeklyMileage;
+
+      if (!sourceChart) return;
+
+      document.getElementById('modalChartTitle').innerText = title;
+      const modal = document.getElementById('zoomModal');
+      modal.classList.add('active');
+
+      if (modalChartInstance) modalChartInstance.destroy();
+
+      const modalCtx = document.getElementById('modalChartCanvas').getContext('2d');
+      modalChartInstance = new Chart(modalCtx, {
+        type: sourceChart.config.type,
+        data: JSON.parse(JSON.stringify(sourceChart.config.data)),
+        options: {
+          ...sourceChart.config.options,
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            ...sourceChart.config.options.plugins,
+            zoom: {
+              zoom: {
+                wheel: { enabled: true },
+                pinch: { enabled: true },
+                mode: 'xy'
+              },
+              pan: { enabled: true, mode: 'xy' }
+            }
+          }
+        }
+      });
+    }
+
+    function zoomInModalChart() {
+      if (modalChartInstance && modalChartInstance.zoom) {
+        modalChartInstance.zoom(1.2);
+      }
+    }
+
+    function zoomOutModalChart() {
+      if (modalChartInstance && modalChartInstance.zoom) {
+        modalChartInstance.zoom(0.8);
+      }
+    }
+
+    function resetModalChartZoom() {
+      if (modalChartInstance && modalChartInstance.resetZoom) {
+        modalChartInstance.resetZoom();
+      }
+    }
+
+    function closeZoomModal() {
+      document.getElementById('zoomModal').classList.remove('active');
+      if (modalChartInstance) {
+        modalChartInstance.destroy();
+        modalChartInstance = null;
+      }
     }
 
     function selectPreset(type, btnEl) {
