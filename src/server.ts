@@ -70,6 +70,8 @@ app.get('/', async (req: Request, res: Response) => {
       --subtle-bg: #f8fafc;
       --badge-bg: #f0f7ff;
       --badge-border: #cce7ff;
+      --race-card-bg: #fff8f5;
+      --race-card-border: #ffd8cc;
     }
 
     body.dark-mode {
@@ -87,6 +89,8 @@ app.get('/', async (req: Request, res: Response) => {
       --subtle-bg: rgba(255, 255, 255, 0.04);
       --badge-bg: rgba(0, 198, 255, 0.12);
       --badge-border: rgba(0, 198, 255, 0.25);
+      --race-card-bg: rgba(252, 76, 2, 0.08);
+      --race-card-border: rgba(252, 76, 2, 0.25);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -266,6 +270,72 @@ app.get('/', async (req: Request, res: Response) => {
       display: block;
     }
 
+    /* Upcoming Race Countdown Card */
+    .race-card {
+      background: var(--race-card-bg);
+      border: 1px solid var(--race-card-border);
+      border-radius: 12px;
+      padding: 1.35rem 1.6rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+
+    .race-header {
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--theme-orange);
+      margin-bottom: 0.4rem;
+    }
+
+    .race-details-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .race-title {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-dark);
+    }
+
+    .race-countdown-clock {
+      display: flex;
+      gap: 12px;
+    }
+
+    .countdown-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 8px 14px;
+      border-radius: 8px;
+      min-width: 60px;
+    }
+
+    .countdown-num {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--theme-orange);
+      line-height: 1.1;
+    }
+
+    .countdown-lbl {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+    }
+
     /* Date Period Filter Bar Component */
     .filter-bar {
       background: var(--card-bg);
@@ -375,9 +445,8 @@ app.get('/', async (req: Request, res: Response) => {
       padding: 9px 14px;
       border-radius: 6px;
       font-family: inherit;
-      font-size: 0.95rem;
-      font-weight: 700;
-      width: 140px;
+      font-size: 0.92rem;
+      font-weight: 600;
     }
 
     .theme-options-group {
@@ -848,6 +917,23 @@ app.get('/', async (req: Request, res: Response) => {
   <div class="main-container">
     <!-- TAB 1: OVERVIEW & RECORDS -->
     <div class="tab-content active" id="overviewTab">
+      <!-- 0. Upcoming Race Countdown Banner (Positioned Above Insights) -->
+      <div class="race-card" id="raceCountdownWidget">
+        <div class="race-header">Next Race Countdown</div>
+        <div class="race-details-group" id="raceDetailsContent">
+          <div>
+            <div class="race-title" id="raceTitleText">No Upcoming Race Scheduled</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;" id="raceSubtext">Set your next target race in the Settings tab.</div>
+          </div>
+          <div class="race-countdown-clock" id="raceClockGroup" style="display: none;">
+            <div class="countdown-unit"><span class="countdown-num" id="cntDays">00</span><span class="countdown-lbl">Days</span></div>
+            <div class="countdown-unit"><span class="countdown-num" id="cntHours">00</span><span class="countdown-lbl">Hours</span></div>
+            <div class="countdown-unit"><span class="countdown-num" id="cntMins">00</span><span class="countdown-lbl">Mins</span></div>
+            <div class="countdown-unit"><span class="countdown-num" id="cntSecs">00</span><span class="countdown-lbl">Secs</span></div>
+          </div>
+        </div>
+      </div>
+
       <!-- 1. Automated Performance Insights Banner -->
       <div class="insights-card">
         <div class="insights-header">Performance Trend Insights (Latest 10 Runs)</div>
@@ -1079,7 +1165,28 @@ app.get('/', async (req: Request, res: Response) => {
       </div>
       
       <div class="settings-grid">
-        <!-- 1. Adjustable Monthly Goal Target Card -->
+        <!-- 1. Upcoming Target Race Settings Card -->
+        <div class="settings-card">
+          <div class="settings-title">Next Upcoming Race</div>
+          <div class="settings-desc">Set your next target race event details to display a live countdown on the Overview tab.</div>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="settings-form-group">
+              <label style="font-size: 0.85rem; font-weight: 700; width: 110px;">Race Name:</label>
+              <input type="text" id="raceNameInput" class="settings-input" style="width: 260px;" placeholder="e.g. Hyderabad Half Marathon" />
+            </div>
+            <div class="settings-form-group">
+              <label style="font-size: 0.85rem; font-weight: 700; width: 110px;">Race Date:</label>
+              <input type="date" id="raceDateInput" class="settings-input" style="width: 260px;" />
+            </div>
+            <div class="settings-form-group">
+              <label style="font-size: 0.85rem; font-weight: 700; width: 110px;">Distance (km):</label>
+              <input type="number" id="raceDistInput" class="settings-input" style="width: 140px;" step="0.1" placeholder="e.g. 21.1" />
+              <button onclick="saveUpcomingRaceSetting()" class="strava-btn strava-btn-primary">Save Race</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Adjustable Monthly Goal Target Card -->
         <div class="settings-card">
           <div class="settings-title">Monthly Distance Goal Target</div>
           <div class="settings-desc">Set your target running mileage in kilometers for the current calendar month.</div>
@@ -1090,7 +1197,7 @@ app.get('/', async (req: Request, res: Response) => {
           </div>
         </div>
 
-        <!-- 2. Application Theme Settings Card -->
+        <!-- 3. Application Theme Settings Card -->
         <div class="settings-card">
           <div class="settings-title">Appearance & Theme</div>
           <div class="settings-desc">Choose between Light and Dark mode interface aesthetics.</div>
@@ -1100,7 +1207,7 @@ app.get('/', async (req: Request, res: Response) => {
           </div>
         </div>
 
-        <!-- 3. Account & Re-authentication Card -->
+        <!-- 4. Account & Re-authentication Card -->
         <div class="settings-card">
           <div class="settings-title">Account & Integrations</div>
           <div class="settings-desc">Manage your WHOOP API connection and re-authenticate if token expires.</div>
@@ -1138,6 +1245,8 @@ app.get('/', async (req: Request, res: Response) => {
     let activePreset = 'all';
     let allRunsCache = [];
     let monthlyTargetKmSetting = 100;
+    let upcomingRaceSetting = null;
+    let raceCountdownTimer = null;
     let chartInstanceDistancePace = null;
     let chartInstanceHrZones = null;
     let chartInstanceStrainHr = null;
@@ -1152,8 +1261,85 @@ app.get('/', async (req: Request, res: Response) => {
       }
       document.getElementById('monthlyGoalInput').value = monthlyTargetKmSetting;
 
+      const savedRace = localStorage.getItem('upcomingRace');
+      if (savedRace) {
+        try {
+          upcomingRaceSetting = JSON.parse(savedRace);
+          document.getElementById('raceNameInput').value = upcomingRaceSetting.name || '';
+          document.getElementById('raceDateInput').value = upcomingRaceSetting.date || '';
+          document.getElementById('raceDistInput').value = upcomingRaceSetting.distance || '';
+        } catch (e) {}
+      }
+
       const savedTheme = localStorage.getItem('theme');
       setThemeMode(savedTheme === 'dark' ? 'dark' : 'light', false);
+      updateRaceCountdownWidget();
+    }
+
+    function saveUpcomingRaceSetting() {
+      const name = document.getElementById('raceNameInput').value.trim();
+      const date = document.getElementById('raceDateInput').value;
+      const distance = document.getElementById('raceDistInput').value;
+
+      if (!name || !date) {
+        alert('Please enter both Race Name and Race Date.');
+        return;
+      }
+
+      upcomingRaceSetting = { name, date, distance };
+      localStorage.setItem('upcomingRace', JSON.stringify(upcomingRaceSetting));
+      alert('Upcoming race "' + name + '" saved successfully!');
+      updateRaceCountdownWidget();
+    }
+
+    function updateRaceCountdownWidget() {
+      if (raceCountdownTimer) clearInterval(raceCountdownTimer);
+
+      const titleEl = document.getElementById('raceTitleText');
+      const subtextEl = document.getElementById('raceSubtext');
+      const clockGroup = document.getElementById('raceClockGroup');
+
+      if (!upcomingRaceSetting || !upcomingRaceSetting.date) {
+        titleEl.innerText = 'No Upcoming Race Scheduled';
+        subtextEl.innerText = 'Set your next target race in the Settings tab.';
+        clockGroup.style.display = 'none';
+        return;
+      }
+
+      const distStr = upcomingRaceSetting.distance ? ' — ' + Number(upcomingRaceSetting.distance).toFixed(1) + ' km' : '';
+      titleEl.innerText = upcomingRaceSetting.name + distStr;
+      
+      const raceTargetTime = new Date(upcomingRaceSetting.date + 'T00:00:00').getTime();
+      const formattedDate = new Date(upcomingRaceSetting.date + 'T00:00:00').toLocaleDateString([], { dateStyle: 'full' });
+      subtextEl.innerText = 'Target Event Date: ' + formattedDate;
+      clockGroup.style.display = 'flex';
+
+      function tick() {
+        const now = new Date().getTime();
+        const diff = raceTargetTime - now;
+
+        if (diff <= 0) {
+          document.getElementById('cntDays').innerText = '00';
+          document.getElementById('cntHours').innerText = '00';
+          document.getElementById('cntMins').innerText = '00';
+          document.getElementById('cntSecs').innerText = '00';
+          subtextEl.innerText = 'Race Day is Here! Good Luck!';
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+        document.getElementById('cntDays').innerText = days < 10 ? '0' + days : days;
+        document.getElementById('cntHours').innerText = hours < 10 ? '0' + hours : hours;
+        document.getElementById('cntMins').innerText = mins < 10 ? '0' + mins : mins;
+        document.getElementById('cntSecs').innerText = secs < 10 ? '0' + secs : secs;
+      }
+
+      tick();
+      raceCountdownTimer = setInterval(tick, 1000);
     }
 
     function setThemeMode(mode, triggerRender = true) {
