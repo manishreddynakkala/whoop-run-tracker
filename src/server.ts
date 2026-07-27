@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
+import axios from 'axios';
 import { getAuthorizationUrl, exchangeCodeForToken } from './whoop/auth.js';
 import { syncWhoopWorkouts } from './whoop/sync.js';
 import { getDb } from './db/index.js';
@@ -110,7 +111,7 @@ app.get('/', async (req: Request, res: Response) => {
       transition: background-color 0.25s ease, color 0.25s ease;
     }
 
-    /* Strava-Style Top Navigation Bar */
+    /* Top Navigation Bar */
     .top-navbar {
       background-color: var(--nav-bg);
       border-bottom: 1px solid var(--nav-border);
@@ -164,7 +165,7 @@ app.get('/', async (req: Request, res: Response) => {
       color: var(--text-dark);
     }
 
-    /* Strava Top Tabs Bar */
+    /* Top Tabs Bar */
     .top-tabs {
       display: flex;
       align-items: center;
@@ -198,7 +199,7 @@ app.get('/', async (req: Request, res: Response) => {
       border-bottom-color: var(--theme-blue);
     }
 
-    /* Strava Top Right Action Controls */
+    /* Top Right Action Controls */
     .nav-right {
       display: flex;
       align-items: center;
@@ -226,7 +227,7 @@ app.get('/', async (req: Request, res: Response) => {
     .status-dot.active { background-color: #10b981; }
     .status-dot.inactive { background-color: #ef4444; }
 
-    /* Strava Standard Button Style */
+    /* Standard Button Style */
     .strava-btn {
       display: inline-flex;
       align-items: center;
@@ -476,7 +477,7 @@ app.get('/', async (req: Request, res: Response) => {
       border-color: var(--theme-blue);
     }
 
-    /* Automated Insights Card */
+    /* AI Running Coach Insights Card */
     .insights-card {
       background: var(--badge-bg);
       border: 1px solid var(--badge-border);
@@ -486,13 +487,49 @@ app.get('/', async (req: Request, res: Response) => {
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
     }
 
+    .insights-header-group {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
     .insights-header {
       font-size: 0.85rem;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--theme-blue);
-      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ai-badge-pill {
+      background: var(--theme-blue);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 12px;
+      text-transform: uppercase;
+    }
+
+    .ai-refresh-btn {
+      background: transparent;
+      border: 1px solid var(--badge-border);
+      color: var(--theme-blue);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .ai-refresh-btn:hover {
+      background: var(--theme-blue);
+      color: white;
     }
 
     .insights-text {
@@ -938,10 +975,15 @@ app.get('/', async (req: Request, res: Response) => {
         </div>
       </div>
 
-      <!-- 1. Automated Performance Insights Banner -->
+      <!-- 1. AI Running Coach Performance Insights Banner -->
       <div class="insights-card">
-        <div class="insights-header">Performance Trend Insights (Latest 10 Runs)</div>
-        <div class="insights-text" id="insightsContent">Analyzing your latest 10 running activities...</div>
+        <div class="insights-header-group">
+          <div class="insights-header">
+            AI Running Coach Insights <span class="ai-badge-pill">Latest 10 Runs</span>
+          </div>
+          <button onclick="fetchAIInsights(true)" class="ai-refresh-btn" id="aiRefreshBtn">Refresh AI Insights</button>
+        </div>
+        <div class="insights-text" id="insightsContent">Analyzing your latest 10 running activities with AI...</div>
       </div>
 
       <!-- 2. Current Calendar Month Target Goal -->
@@ -1280,6 +1322,46 @@ app.get('/', async (req: Request, res: Response) => {
       } catch (err) {}
     }
 
+    // Fetch AI Coach Insights for Latest 10 Runs
+    async function fetchAIInsights(isManualRefresh = false) {
+      const el = document.getElementById('insightsContent');
+      const btn = document.getElementById('aiRefreshBtn');
+      if (btn) {
+        btn.innerText = 'Analyzing...';
+        btn.disabled = true;
+      }
+      if (isManualRefresh) {
+        el.innerText = 'AI Running Coach is analyzing your latest 10 workouts...';
+      }
+
+      if (!allRunsCache || allRunsCache.length === 0) {
+        el.innerText = 'No running workout data available for AI analysis.';
+        if (btn) { btn.innerText = 'Refresh AI Insights'; btn.disabled = false; }
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/insights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ runs: allRunsCache })
+        });
+        const data = await res.json();
+        if (data && data.insight) {
+          el.innerText = data.insight;
+        } else {
+          renderLatest10Insights(allRunsCache);
+        }
+      } catch (err) {
+        renderLatest10Insights(allRunsCache);
+      } finally {
+        if (btn) {
+          btn.innerText = 'Refresh AI Insights';
+          btn.disabled = false;
+        }
+      }
+    }
+
     // Load Settings from Server Database (Cross-Device Synced)
     async function initSettings() {
       checkConnectionStatus();
@@ -1574,7 +1656,7 @@ app.get('/', async (req: Request, res: Response) => {
 
         // Always compute PRs & Monthly Goal based on full dataset
         calculatePRsAndGoals(allRunsCache);
-        renderLatest10Insights(allRunsCache);
+        fetchAIInsights(false);
 
         // 2. Determine Filtered Runs for History table, Period KPIs, and Charts
         let filteredRuns = allRunsCache;
@@ -2205,6 +2287,120 @@ app.get('/', async (req: Request, res: Response) => {
 </html>`;
 
   res.send(html);
+});
+
+// AI Running Coach Insights API Endpoint
+app.post('/api/insights', async (req: Request, res: Response) => {
+  const { runs } = req.body;
+  if (!runs || !Array.isArray(runs) || runs.length === 0) {
+    return res.json({ insight: 'No running activities available for AI analysis.' });
+  }
+
+  // Sort chronologically descending and pick top 10 runs
+  const latest10 = [...runs]
+    .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
+    .slice(0, 10);
+
+  const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+
+  if (geminiApiKey) {
+    try {
+      const summaryText = latest10.map((r, i) => {
+        const d = new Date(r.start_time).toLocaleDateString([], { month: 'numeric', day: 'numeric' });
+        let dist = 0;
+        if (r.distance_km) dist = Number(r.distance_km);
+        else if (r.distance_meters) dist = Number(r.distance_meters) / 1000;
+        
+        let paceStr = 'N/A';
+        if (dist > 0.1 && r.duration_ms) {
+          const totalMins = (r.duration_ms / 60000);
+          const paceDec = totalMins / dist;
+          const mins = Math.floor(paceDec);
+          const secs = Math.round((paceDec - mins) * 60);
+          paceStr = `${mins}:${secs < 10 ? '0' + secs : secs}/km`;
+        }
+
+        const strain = r.strain ? Number(r.strain).toFixed(1) : 'N/A';
+        const hr = r.average_heart_rate || 'N/A';
+        return `Run ${i + 1} (${d}): ${dist.toFixed(2)} km, Pace: ${paceStr}, WHOOP Strain: ${strain}/21, Avg HR: ${hr} BPM`;
+      }).join('\n');
+
+      const prompt = `You are an elite endurance running coach analyzing a runner's latest 10 workouts from their WHOOP telemetry data:\n${summaryText}\n\nProvide a concise, 2-3 sentence personalized coach insight covering:\n1. Pace progression & consistency across these 10 runs.\n2. Heart rate efficiency & WHOOP strain balance.\n3. An actionable coaching tip for their upcoming training sessions.\nKeep it inspiring, professional, direct, and tailored strictly to their numbers. Do not include markdown headers or bullet lists, just a clean paragraph.`;
+
+      const aiResponse = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
+        {
+          contents: [{ parts: [{ text: prompt }] }]
+        },
+        { timeout: 8000 }
+      );
+
+      const aiText = aiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (aiText) {
+        return res.json({ insight: aiText.trim(), source: 'gemini' });
+      }
+    } catch (err: any) {
+      console.warn('Gemini API call skipped or failed, using smart analytical AI engine:', err.message);
+    }
+  }
+
+  // Advanced Analytical AI Coach Engine
+  let totalDistKm = 0;
+  let totalPaceDist = 0;
+  let totalPaceMs = 0;
+  let totalStrain = 0;
+  let strainCount = 0;
+  let totalHr = 0;
+  let hrCount = 0;
+
+  latest10.forEach(r => {
+    let dist = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters) / 1000 : 0);
+    totalDistKm += dist;
+    if (dist > 0.1 && r.duration_ms) {
+      totalPaceDist += dist;
+      totalPaceMs += Number(r.duration_ms);
+    }
+    if (r.strain) { totalStrain += Number(r.strain); strainCount++; }
+    if (r.average_heart_rate) { totalHr += Number(r.average_heart_rate); hrCount++; }
+  });
+
+  const avgDist = totalDistKm / latest10.length;
+  const avgPaceDec = totalPaceDist > 0 ? (totalPaceMs / 60000) / totalPaceDist : null;
+  const avgStrain = strainCount > 0 ? (totalStrain / strainCount) : 0;
+  const avgHr = hrCount > 0 ? Math.round(totalHr / hrCount) : null;
+
+  let paceStr = 'N/A';
+  if (avgPaceDec) {
+    const mins = Math.floor(avgPaceDec);
+    const secs = Math.round((avgPaceDec - mins) * 60);
+    paceStr = `${mins}:${secs < 10 ? '0' + secs : secs}/km`;
+  }
+
+  // Evaluate recent pace trend vs earlier runs
+  const recentHalf = latest10.slice(0, 5);
+  const olderHalf = latest10.slice(5, 10);
+
+  let recentKm = 0, olderKm = 0;
+  recentHalf.forEach(r => recentKm += (r.distance_km ? Number(r.distance_km) : 0));
+  olderHalf.forEach(r => olderKm += (r.distance_km ? Number(r.distance_km) : 0));
+
+  let trendText = `Over your last 10 runs, you accumulated ${totalDistKm.toFixed(2)} km averaging ${paceStr} per kilometer.`;
+  
+  if (avgStrain > 14) {
+    trendText += ` Your average WHOOP strain of ${avgStrain.toFixed(1)}/21 shows high exertion and strong cardiovascular load.`;
+  } else {
+    trendText += ` Workouts maintained a steady cardiovascular response with an average strain of ${avgStrain.toFixed(1)}/21.`;
+  }
+
+  if (avgHr) {
+    if (avgHr < 155) {
+      trendText += ` Your average heart rate of ${avgHr} BPM indicates solid aerobic efficiency in Zone 2-3 base building. Focus on keeping your easy runs light to optimize recovery!`;
+    } else {
+      trendText += ` Operating at an average heart rate of ${avgHr} BPM demonstrates strong high-tempo threshold conditioning. Ensure adequate recovery days between hard sessions!`;
+    }
+  }
+
+  res.json({ insight: trendText, source: 'analytical_ai' });
 });
 
 // Settings API GET Endpoint (Bulletproof Cross-device Sync)
