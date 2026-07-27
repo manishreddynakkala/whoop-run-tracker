@@ -50,7 +50,7 @@ app.get('/', async (req: Request, res: Response) => {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Run Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -100,6 +100,11 @@ app.get('/', async (req: Request, res: Response) => {
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html, body {
+      overflow-x: hidden;
+      width: 100%;
+    }
+
     body {
       font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background-color: var(--bg-main);
@@ -120,38 +125,43 @@ app.get('/', async (req: Request, res: Response) => {
       z-index: 1000;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
       transition: background-color 0.25s ease, border-color 0.25s ease;
+      width: 100%;
     }
 
     .nav-container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 0 1.5rem;
+      padding: 0 1.25rem;
       height: 62px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 1rem;
     }
 
     .nav-left {
       display: flex;
       align-items: center;
-      gap: 2.25rem;
+      gap: 1.75rem;
+      flex: 1;
+      min-width: 0;
     }
 
     .brand-logo {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       text-decoration: none;
+      flex-shrink: 0;
     }
 
     .brand-icon {
       background: linear-gradient(135deg, var(--theme-blue), #0052cc);
       color: white;
       font-weight: 800;
-      font-size: 1.25rem;
-      width: 36px;
-      height: 36px;
+      font-size: 1.15rem;
+      width: 34px;
+      height: 34px;
       border-radius: 8px;
       display: flex;
       align-items: center;
@@ -159,34 +169,41 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .brand-name {
-      font-size: 1.35rem;
+      font-size: 1.25rem;
       font-weight: 800;
       letter-spacing: -0.03em;
       color: var(--text-dark);
+      white-space: nowrap;
     }
 
-    /* Top Tabs Bar */
+    /* Scrollable Top Tabs Bar for Mobile */
     .top-tabs {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.25rem;
       height: 62px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
+    .top-tabs::-webkit-scrollbar { display: none; }
 
     .top-tab-btn {
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       font-weight: 600;
       height: 62px;
-      padding: 0 16px;
+      padding: 0 14px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
       border-bottom: 3px solid transparent;
+      white-space: nowrap;
       transition: all 0.2s ease;
+      flex-shrink: 0;
     }
 
     .top-tab-btn:hover {
@@ -203,20 +220,22 @@ app.get('/', async (req: Request, res: Response) => {
     .nav-right {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      flex-shrink: 0;
     }
 
     .status-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 600;
       color: var(--text-muted);
       background: var(--subtle-bg);
-      padding: 5px 12px;
+      padding: 5px 10px;
       border-radius: 20px;
       border: 1px solid var(--card-border);
+      white-space: nowrap;
     }
 
     .status-dot {
@@ -233,7 +252,7 @@ app.get('/', async (req: Request, res: Response) => {
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 8px 16px;
+      padding: 7px 14px;
       border-radius: 4px;
       font-weight: 700;
       font-size: 0.85rem;
@@ -241,6 +260,7 @@ app.get('/', async (req: Request, res: Response) => {
       text-decoration: none;
       transition: background-color 0.2s ease, transform 0.1s ease;
       border: none;
+      white-space: nowrap;
     }
 
     .strava-btn-primary {
@@ -263,8 +283,9 @@ app.get('/', async (req: Request, res: Response) => {
     /* Main Content Wrapper */
     .main-container {
       max-width: 1200px;
-      margin: 2rem auto;
-      padding: 0 1.5rem;
+      margin: 1.5rem auto;
+      padding: 0 1.25rem;
+      width: 100%;
     }
 
     .tab-content {
@@ -280,13 +301,13 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--race-card-bg);
       border: 1px solid var(--race-card-border);
       border-radius: 12px;
-      padding: 1.35rem 1.6rem;
-      margin-bottom: 1.5rem;
+      padding: 1.25rem 1.35rem;
+      margin-bottom: 1.25rem;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
     }
 
     .race-header {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -303,7 +324,7 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .race-title {
-      font-size: 1.3rem;
+      font-size: 1.25rem;
       font-weight: 800;
       letter-spacing: -0.02em;
       color: var(--text-dark);
@@ -311,22 +332,25 @@ app.get('/', async (req: Request, res: Response) => {
 
     .race-countdown-clock {
       display: flex;
-      gap: 12px;
+      gap: 8px;
+      width: 100%;
+      max-width: 360px;
     }
 
     .countdown-unit {
+      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      padding: 8px 14px;
+      padding: 6px 8px;
       border-radius: 8px;
-      min-width: 60px;
+      min-width: 0;
     }
 
     .countdown-num {
-      font-size: 1.5rem;
+      font-size: 1.35rem;
       font-weight: 800;
       letter-spacing: -0.03em;
       color: var(--theme-orange);
@@ -334,7 +358,7 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .countdown-lbl {
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -346,18 +370,18 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 1rem 1.25rem;
-      margin-bottom: 1.5rem;
+      padding: 0.9rem 1.1rem;
+      margin-bottom: 1.25rem;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
+      gap: 0.85rem;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
     .filter-title {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
@@ -374,12 +398,13 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--subtle-bg);
       border: 1px solid var(--card-border);
       color: var(--text-muted);
-      padding: 6px 14px;
+      padding: 6px 12px;
       border-radius: 4px;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s ease;
+      touch-action: manipulation;
     }
 
     .preset-btn:hover, .preset-btn.active {
@@ -391,7 +416,7 @@ app.get('/', async (req: Request, res: Response) => {
     .date-inputs {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
     }
 
@@ -399,10 +424,10 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       color: var(--text-dark);
-      padding: 6px 10px;
+      padding: 5px 8px;
       border-radius: 4px;
       font-family: inherit;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 600;
     }
 
@@ -410,7 +435,7 @@ app.get('/', async (req: Request, res: Response) => {
     .settings-grid {
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 1.25rem;
       max-width: 800px;
     }
 
@@ -418,28 +443,28 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 1.5rem;
+      padding: 1.25rem;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
     .settings-title {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 800;
       letter-spacing: -0.02em;
       color: var(--text-dark);
-      margin-bottom: 0.35rem;
+      margin-bottom: 0.3rem;
     }
 
     .settings-desc {
-      font-size: 0.85rem;
+      font-size: 0.83rem;
       color: var(--text-muted);
-      margin-bottom: 1.1rem;
+      margin-bottom: 1rem;
     }
 
     .settings-form-group {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
     }
 
@@ -447,11 +472,12 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--subtle-bg);
       border: 1px solid var(--card-border);
       color: var(--text-dark);
-      padding: 9px 14px;
+      padding: 8px 12px;
       border-radius: 6px;
       font-family: inherit;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       font-weight: 600;
+      max-width: 100%;
     }
 
     .theme-options-group {
@@ -463,12 +489,13 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--subtle-bg);
       border: 1px solid var(--card-border);
       color: var(--text-muted);
-      padding: 10px 20px;
+      padding: 8px 16px;
       border-radius: 6px;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s ease;
+      flex: 1;
     }
 
     .theme-option-btn.active {
@@ -482,20 +509,22 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--badge-bg);
       border: 1px solid var(--badge-border);
       border-radius: 12px;
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 1.5rem;
+      padding: 1.15rem 1.25rem;
+      margin-bottom: 1.25rem;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
     }
 
     .insights-header-group {
       display: flex;
+      flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 0.5rem;
+      gap: 8px;
     }
 
     .insights-header {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -508,10 +537,10 @@ app.get('/', async (req: Request, res: Response) => {
     .ai-badge-pill {
       background: var(--theme-blue);
       color: white;
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 800;
-      padding: 2px 7px;
-      border-radius: 12px;
+      padding: 2px 6px;
+      border-radius: 10px;
       text-transform: uppercase;
     }
 
@@ -519,9 +548,9 @@ app.get('/', async (req: Request, res: Response) => {
       background: transparent;
       border: 1px solid var(--badge-border);
       color: var(--theme-blue);
-      padding: 4px 10px;
+      padding: 4px 8px;
       border-radius: 4px;
-      font-size: 0.76rem;
+      font-size: 0.74rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.15s ease;
@@ -533,10 +562,10 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .insights-text {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 500;
       color: var(--text-dark);
-      line-height: 1.6;
+      line-height: 1.55;
     }
 
     /* Monthly Goal Progress Card */
@@ -544,8 +573,8 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 1.5rem;
+      padding: 1.15rem 1.25rem;
+      margin-bottom: 1.25rem;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
@@ -553,11 +582,11 @@ app.get('/', async (req: Request, res: Response) => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.65rem;
     }
 
     .goal-title {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -565,7 +594,7 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .goal-stats {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-weight: 800;
       color: var(--theme-blue);
     }
@@ -575,7 +604,7 @@ app.get('/', async (req: Request, res: Response) => {
       height: 10px;
       border-radius: 6px;
       overflow: hidden;
-      margin-bottom: 0.6rem;
+      margin-bottom: 0.55rem;
     }
 
     .progress-bar-fill {
@@ -588,14 +617,14 @@ app.get('/', async (req: Request, res: Response) => {
     .goal-footer {
       display: flex;
       justify-content: space-between;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       color: var(--text-muted);
       font-weight: 500;
     }
 
     /* Personal Records (PRs) Section */
     .prs-section {
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
     }
 
     .prs-title {
@@ -603,77 +632,76 @@ app.get('/', async (req: Request, res: Response) => {
       font-weight: 800;
       letter-spacing: -0.02em;
       color: var(--text-dark);
-      margin-bottom: 0.85rem;
+      margin-bottom: 0.75rem;
     }
 
     .prs-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.85rem;
     }
 
     .pr-card {
       background: var(--subtle-bg);
       border: 1px solid var(--card-border);
       border-radius: 10px;
-      padding: 1.1rem;
+      padding: 1rem;
     }
 
     .pr-label {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--text-muted);
-      margin-bottom: 0.3rem;
+      margin-bottom: 0.25rem;
     }
 
     .pr-value {
-      font-size: 1.45rem;
+      font-size: 1.35rem;
       font-weight: 800;
       letter-spacing: -0.02em;
       color: var(--theme-blue);
     }
 
     .pr-date {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       color: var(--text-dim);
-      margin-top: 0.3rem;
+      margin-top: 0.25rem;
     }
 
     /* Metric Cards Grid */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 0.85rem;
+      margin-bottom: 1.75rem;
     }
 
     .card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 1.2rem 1.1rem;
+      padding: 1.1rem 1rem;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
       transition: transform 0.15s ease, border-color 0.15s ease;
     }
 
     .card:hover {
       border-color: var(--theme-blue);
-      transform: translateY(-1px);
     }
 
     .card-title {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       font-weight: 700;
-      margin-bottom: 0.35rem;
+      margin-bottom: 0.3rem;
     }
 
     .card-value {
-      font-size: 1.85rem;
+      font-size: 1.65rem;
       font-weight: 800;
       letter-spacing: -0.03em;
       line-height: 1.1;
@@ -681,31 +709,25 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     .card-subtitle {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 500;
       color: var(--text-dim);
-      margin-top: 0.35rem;
+      margin-top: 0.3rem;
     }
 
     /* Charts Grid Section */
     .charts-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    @media (max-width: 600px) {
-      .charts-grid {
-        grid-template-columns: 1fr;
-      }
+      grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.75rem;
     }
 
     .chart-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 1.4rem;
+      padding: 1.25rem;
       display: flex;
       flex-direction: column;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
@@ -715,11 +737,11 @@ app.get('/', async (req: Request, res: Response) => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.2rem;
+      margin-bottom: 1rem;
     }
 
     .chart-title {
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: 800;
       letter-spacing: -0.02em;
       color: var(--text-dark);
@@ -729,9 +751,9 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--subtle-bg);
       border: 1px solid var(--card-border);
       color: var(--text-dark);
-      padding: 5px 12px;
+      padding: 4px 10px;
       border-radius: 4px;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.15s ease;
@@ -746,7 +768,7 @@ app.get('/', async (req: Request, res: Response) => {
     .chart-body {
       position: relative;
       width: 100%;
-      height: 280px;
+      height: 270px;
     }
 
     /* Zoom Fullscreen Modal Styles */
@@ -765,7 +787,7 @@ app.get('/', async (req: Request, res: Response) => {
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.2s ease;
-      padding: 1.5rem;
+      padding: 1rem;
     }
 
     .modal-overlay.active {
@@ -777,11 +799,11 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 16px;
-      width: 94vw;
+      width: 96vw;
       max-width: 1100px;
       height: 85vh;
       max-height: 750px;
-      padding: 1.5rem;
+      padding: 1.25rem;
       display: flex;
       flex-direction: column;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
@@ -792,14 +814,14 @@ app.get('/', async (req: Request, res: Response) => {
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.25rem;
-      gap: 12px;
-      padding-bottom: 1rem;
+      margin-bottom: 1rem;
+      gap: 10px;
+      padding-bottom: 0.85rem;
       border-bottom: 1px solid var(--card-border);
     }
 
     .modal-title {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: 800;
       letter-spacing: -0.02em;
       color: var(--text-dark);
@@ -808,16 +830,16 @@ app.get('/', async (req: Request, res: Response) => {
     .modal-controls {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .modal-btn {
       background: var(--subtle-bg);
       border: 1px solid var(--card-border);
       color: var(--text-dark);
-      padding: 6px 12px;
+      padding: 5px 10px;
       border-radius: 4px;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.15s ease;
@@ -850,11 +872,11 @@ app.get('/', async (req: Request, res: Response) => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1rem;
+      margin-bottom: 0.85rem;
     }
 
     .section-title {
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       font-weight: 800;
       letter-spacing: -0.03em;
       color: var(--text-dark);
@@ -872,15 +894,15 @@ app.get('/', async (req: Request, res: Response) => {
 
     table {
       width: 100%;
-      min-width: 800px;
+      min-width: 750px;
       border-collapse: collapse;
       text-align: left;
     }
 
     th {
       background: var(--subtle-bg);
-      padding: 0.9rem 1.25rem;
-      font-size: 0.78rem;
+      padding: 0.85rem 1.1rem;
+      font-size: 0.76rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       font-weight: 800;
@@ -889,9 +911,9 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     td {
-      padding: 0.95rem 1.25rem;
+      padding: 0.85rem 1.1rem;
       border-bottom: 1px solid var(--card-border);
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: 500;
       color: var(--text-dark);
     }
@@ -906,9 +928,9 @@ app.get('/', async (req: Request, res: Response) => {
 
     .badge {
       display: inline-block;
-      padding: 4px 10px;
+      padding: 3px 8px;
       border-radius: 4px;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 700;
       background: var(--badge-bg);
       color: var(--theme-blue);
@@ -919,6 +941,75 @@ app.get('/', async (req: Request, res: Response) => {
       background: var(--badge-bg);
       color: var(--theme-blue);
       border: 1px solid var(--badge-border);
+    }
+
+    /* Mobile Media Queries (iPhone 16 / Mobile Devices) */
+    @media (max-width: 600px) {
+      .nav-container {
+        padding: 0 0.85rem;
+      }
+      .brand-name {
+        font-size: 1.1rem;
+      }
+      .nav-left {
+        gap: 0.75rem;
+      }
+      .status-badge span {
+        display: inline-block;
+      }
+      .main-container {
+        padding: 0 0.85rem;
+        margin: 1rem auto;
+      }
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.65rem;
+      }
+      .prs-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.65rem;
+      }
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+      .settings-form-group {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .settings-input {
+        width: 100% !important;
+      }
+      .strava-btn {
+        width: 100%;
+      }
+      .race-details-group {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .race-countdown-clock {
+        width: 100%;
+        max-width: 100%;
+      }
+      .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .preset-group {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .preset-btn {
+        flex: 1;
+        text-align: center;
+        padding: 6px 4px;
+      }
+      .date-inputs {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .date-inputs input[type="date"] {
+        flex: 1;
+      }
     }
   </style>
 </head>
