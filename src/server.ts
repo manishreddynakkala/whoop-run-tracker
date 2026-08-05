@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import axios from 'axios';
 import nodemailer from 'nodemailer';
+import https from 'https';
 import { Resend } from 'resend';
 import { getAuthorizationUrl, exchangeCodeForToken } from './whoop/auth.js';
 import { syncWhoopWorkouts } from './whoop/sync.js';
@@ -3432,14 +3433,13 @@ app.post('/api/send-email-report', async (req: Request, res: Response) => {
   try {
     const defaultResendKey = Buffer.from('cmVfNXFGTUVTS3ZfQXRoeGdjWG9ETm1WNFhHQUZaV0Y5WmJE', 'base64').toString('utf8');
     const resendApiKey = process.env.RESEND_API_KEY || defaultResendKey;
-    const resend = new Resend(resendApiKey);
 
     const attachments: any[] = [];
     if (imageBase64 && imageBase64.includes('base64,')) {
       const base64Data = imageBase64.split('base64,')[1];
       attachments.push({
         filename: `Weekly_Running_Report_${new Date().toISOString().split('T')[0]}.png`,
-        content: Buffer.from(base64Data, 'base64'),
+        content: base64Data
       });
     }
 
@@ -3469,7 +3469,7 @@ app.post('/api/send-email-report', async (req: Request, res: Response) => {
       </div>
     `;
 
-    const sendResult = await resend.emails.send({
+    const payload = JSON.stringify({
       from: 'Run Tracker <onboarding@resend.dev>',
       to: [targetEmail],
       subject: `🏃‍♂️ Weekly Running Performance Report - ${new Date().toLocaleDateString()}`,
@@ -3477,12 +3477,45 @@ app.post('/api/send-email-report', async (req: Request, res: Response) => {
       attachments: attachments
     });
 
-    if (sendResult.error) {
-      console.error('Resend API error:', sendResult.error);
-      return res.status(500).json({ success: false, message: sendResult.error.message });
+    const options = {
+      hostname: 'api.resend.com',
+      path: '/emails',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    };
+
+    const resendResponse = await new Promise<any>((resolve, reject) => {
+      const request = https.request(options, (response) => {
+        let responseBody = '';
+        response.on('data', chunk => responseBody += chunk);
+        response.on('end', () => {
+          try {
+            const parsed = JSON.parse(responseBody);
+            if (response.statusCode && response.statusCode >= 200 && response.statusCode < 300) {
+              resolve({ success: true, data: parsed });
+            } else {
+              resolve({ success: false, error: parsed });
+            }
+          } catch (e) {
+            reject(e);
+          }
+        });
+      });
+      request.on('error', err => reject(err));
+      request.write(payload);
+      request.end();
+    });
+
+    if (!resendResponse.success) {
+      console.error('Resend API error:', resendResponse.error);
+      return res.status(500).json({ success: false, message: resendResponse.error?.message || 'Resend delivery failed' });
     }
 
-    res.json({ success: true, message: `Email sent to ${targetEmail}`, id: sendResult.data?.id });
+    res.json({ success: true, message: `Email sent to ${targetEmail}`, id: resendResponse.data?.id });
   } catch (err: any) {
     console.error('Failed to send email via Resend API:', err);
     res.status(500).json({ success: false, error: err.message });
