@@ -2246,6 +2246,15 @@ app.get('/', async (req: Request, res: Response) => {
       } catch (e) {}
     }
 
+    function drawSafeRoundRect(c, x, y, w, h, r) {
+      c.beginPath();
+      if (typeof c.roundRect === 'function') {
+        c.roundRect(x, y, w, h, r);
+      } else {
+        c.rect(x, y, w, h);
+      }
+    }
+
     // Pure Native Canvas High-Res PNG Generator (100% Reliable, Zero CDN Dependencies)
     function downloadSummaryCardImage() {
       var btn = document.getElementById('downloadCardBtn');
@@ -2258,7 +2267,6 @@ app.get('/', async (req: Request, res: Response) => {
         canvas.height = 420;
         var ctx = canvas.getContext('2d');
 
-        // Background Gradient
         var grad = ctx.createLinearGradient(0, 0, 800, 420);
         var isDark = document.body.classList.contains('dark-mode');
         if (isDark) {
@@ -2278,8 +2286,7 @@ app.get('/', async (req: Request, res: Response) => {
 
         // Header Brand Icon
         ctx.fillStyle = '#0080ff';
-        ctx.beginPath();
-        ctx.roundRect(40, 40, 44, 44, 10);
+        drawSafeRoundRect(ctx, 40, 40, 44, 44, 10);
         ctx.fill();
 
         ctx.fillStyle = '#ffffff';
@@ -2297,8 +2304,7 @@ app.get('/', async (req: Request, res: Response) => {
 
         // Date Badge
         ctx.fillStyle = '#fc4c02';
-        ctx.beginPath();
-        ctx.roundRect(620, 45, 140, 32, 16);
+        drawSafeRoundRect(ctx, 620, 45, 140, 32, 16);
         ctx.fill();
         ctx.fillStyle = '#ffffff';
         ctx.font = '800 12px "Plus Jakarta Sans", sans-serif';
@@ -2313,10 +2319,15 @@ app.get('/', async (req: Request, res: Response) => {
         ctx.stroke();
 
         // 4 Metric Cards Grid
-        var dist = document.getElementById('sumValDistance').innerText;
-        var runs = document.getElementById('sumValRuns').innerText;
-        var pace = document.getElementById('sumValPace').innerText;
-        var strain = document.getElementById('sumValStrain').innerText;
+        var distEl = document.getElementById('sumValDistance');
+        var runsEl = document.getElementById('sumValRuns');
+        var paceEl = document.getElementById('sumValPace');
+        var strainEl = document.getElementById('sumValStrain');
+
+        var dist = distEl ? distEl.innerText : '0.00 km';
+        var runs = runsEl ? runsEl.innerText : '0';
+        var pace = paceEl ? paceEl.innerText : '0:00/km';
+        var strain = strainEl ? strainEl.innerText : '0.0';
 
         var metrics = [
           { val: dist, lbl: 'TOTAL DISTANCE' },
@@ -2330,8 +2341,7 @@ app.get('/', async (req: Request, res: Response) => {
           ctx.fillStyle = isDark ? 'rgba(255,255,255,0.05)' : '#ffffff';
           ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1';
           ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.roundRect(x, 135, 168, 120, 12);
+          drawSafeRoundRect(ctx, x, 135, 168, 120, 12);
           ctx.fill();
           ctx.stroke();
 
@@ -2348,7 +2358,8 @@ app.get('/', async (req: Request, res: Response) => {
         ctx.textAlign = 'left';
         ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
         ctx.font = '600 14px "Plus Jakarta Sans", sans-serif';
-        var subtext = document.getElementById('summaryCardSubtext').innerText;
+        var subtextEl = document.getElementById('summaryCardSubtext');
+        var subtext = subtextEl ? subtextEl.innerText : 'Calculated from your logged WHOOP telemetry workouts.';
         ctx.fillText(subtext, 40, 310);
 
         if (upcomingRaceSetting && upcomingRaceSetting.name) {
@@ -2378,10 +2389,15 @@ app.get('/', async (req: Request, res: Response) => {
 
     function copySummaryCardText() {
       try {
-        var dist = document.getElementById('sumValDistance').innerText;
-        var runs = document.getElementById('sumValRuns').innerText;
-        var pace = document.getElementById('sumValPace').innerText;
-        var strain = document.getElementById('sumValStrain').innerText;
+        var distEl = document.getElementById('sumValDistance');
+        var runsEl = document.getElementById('sumValRuns');
+        var paceEl = document.getElementById('sumValPace');
+        var strainEl = document.getElementById('sumValStrain');
+
+        var dist = distEl ? distEl.innerText : '0.00 km';
+        var runs = runsEl ? runsEl.innerText : '0';
+        var pace = paceEl ? paceEl.innerText : '0:00/km';
+        var strain = strainEl ? strainEl.innerText : '0.0';
         
         var text = 'Weekly Running Performance Summary\\n' +
           'Date: ' + new Date().toLocaleDateString() + '\\n' +
@@ -2413,14 +2429,19 @@ app.get('/', async (req: Request, res: Response) => {
         return;
       }
 
-      btn.innerText = 'Preparing Report...';
+      btn.innerText = 'Sending Email...';
       btn.disabled = true;
 
       try {
-        var dist = document.getElementById('sumValDistance').innerText;
-        var runs = document.getElementById('sumValRuns').innerText;
-        var pace = document.getElementById('sumValPace').innerText;
-        var strain = document.getElementById('sumValStrain').innerText;
+        var distEl = document.getElementById('sumValDistance');
+        var runsEl = document.getElementById('sumValRuns');
+        var paceEl = document.getElementById('sumValPace');
+        var strainEl = document.getElementById('sumValStrain');
+
+        var dist = distEl ? distEl.innerText : '0.00 km';
+        var runs = runsEl ? runsEl.innerText : '0';
+        var pace = paceEl ? paceEl.innerText : '0:00/km';
+        var strain = strainEl ? strainEl.innerText : '0.0';
 
         var text = 'Weekly Running Performance Summary\\n' +
           'Date: ' + new Date().toLocaleDateString() + '\\n' +
@@ -2456,8 +2477,7 @@ app.get('/', async (req: Request, res: Response) => {
         ctx.strokeRect(10, 10, 780, 400);
 
         ctx.fillStyle = '#0080ff';
-        ctx.beginPath();
-        ctx.roundRect(40, 40, 44, 44, 10);
+        drawSafeRoundRect(ctx, 40, 40, 44, 44, 10);
         ctx.fill();
 
         ctx.fillStyle = '#ffffff';
@@ -2473,8 +2493,7 @@ app.get('/', async (req: Request, res: Response) => {
         ctx.fillText('Run Tracker & WHOOP Telemetry Report', 96, 82);
 
         ctx.fillStyle = '#fc4c02';
-        ctx.beginPath();
-        ctx.roundRect(620, 45, 140, 32, 16);
+        drawSafeRoundRect(ctx, 620, 45, 140, 32, 16);
         ctx.fill();
         ctx.fillStyle = '#ffffff';
         ctx.font = '800 12px "Plus Jakarta Sans", sans-serif';
@@ -2499,8 +2518,7 @@ app.get('/', async (req: Request, res: Response) => {
           ctx.fillStyle = isDark ? 'rgba(255,255,255,0.05)' : '#ffffff';
           ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1';
           ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.roundRect(x, 135, 168, 120, 12);
+          drawSafeRoundRect(ctx, x, 135, 168, 120, 12);
           ctx.fill();
           ctx.stroke();
 
@@ -2517,7 +2535,8 @@ app.get('/', async (req: Request, res: Response) => {
         ctx.textAlign = 'left';
         ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
         ctx.font = '600 14px "Plus Jakarta Sans", sans-serif';
-        var subtext = document.getElementById('summaryCardSubtext').innerText;
+        var subtextEl = document.getElementById('summaryCardSubtext');
+        var subtext = subtextEl ? subtextEl.innerText : 'Calculated from your logged WHOOP telemetry workouts.';
         ctx.fillText(subtext, 40, 310);
 
         if (upcomingRaceSetting && upcomingRaceSetting.name) {
@@ -2551,6 +2570,7 @@ app.get('/', async (req: Request, res: Response) => {
         }
 
       } catch (err) {
+        console.error('sendEmailReport error:', err);
         showToastNotification('Error preparing email report: ' + err.message, 'error', 'Export Error');
       } finally {
         btn.innerText = 'Send Email Report';
