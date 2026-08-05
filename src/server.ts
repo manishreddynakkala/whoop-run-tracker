@@ -1530,62 +1530,61 @@ app.get('/', async (req: Request, res: Response) => {
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
-    let currentStartDate = null;
-    let currentEndDate = null;
-    let activePreset = 'all';
-    let allRunsCache = [];
-    let monthlyTargetKmSetting = 100;
-    let upcomingRaceSetting = null;
-    let raceCountdownTimer = null;
-    let currentThemeSetting = 'light';
-    let chartInstanceDistancePace = null;
-    let chartInstanceHrZones = null;
-    let chartInstanceStrainHr = null;
-    let chartInstanceWeeklyMileage = null;
-    let modalChartInstance = null;
+    var currentStartDate = null;
+    var currentEndDate = null;
+    var activePreset = 'all';
+    var allRunsCache = [];
+    var monthlyTargetKmSetting = 100;
+    var upcomingRaceSetting = null;
+    var raceCountdownTimer = null;
+    var currentThemeSetting = 'light';
+    var chartInstanceDistancePace = null;
+    var chartInstanceHrZones = null;
+    var chartInstanceStrainHr = null;
+    var chartInstanceWeeklyMileage = null;
+    var modalChartInstance = null;
 
     // Toast Pop-up Notification System (Matches Theme Aesthetic)
-    function showToastNotification(message, type = 'success', title = '') {
-      const container = document.getElementById('toastContainer');
+    function showToastNotification(message, type, title) {
+      if (!type) type = 'success';
+      var container = document.getElementById('toastContainer');
       if (!container) return;
 
-      const toast = document.createElement('div');
-      toast.className = \`toast-popup \${type}\`;
+      var toast = document.createElement('div');
+      toast.className = 'toast-popup ' + type;
 
-      const iconText = type === 'error' ? '✕' : '✓';
-      const defaultTitle = title || (type === 'error' ? 'Sync Error' : 'Sync Complete');
+      var iconText = type === 'error' ? '✕' : '✓';
+      var defaultTitle = title || (type === 'error' ? 'Sync Error' : 'Sync Complete');
 
-      toast.innerHTML = \`
-        <div class="toast-icon">\${iconText}</div>
-        <div class="toast-content">
-          <div class="toast-title">\${defaultTitle}</div>
-          <div class="toast-message">\${message}</div>
-        </div>
-        <button class="toast-close-btn" onclick="this.parentElement.remove()">&times;</button>
-      \`;
+      toast.innerHTML = '<div class="toast-icon">' + iconText + '</div>' +
+        '<div class="toast-content">' +
+          '<div class="toast-title">' + defaultTitle + '</div>' +
+          '<div class="toast-message">' + message + '</div>' +
+        '</div>' +
+        '<button class="toast-close-btn" onclick="this.parentElement.remove()">&times;</button>';
 
       container.appendChild(toast);
 
-      requestAnimationFrame(() => {
+      requestAnimationFrame(function() {
         toast.classList.add('show');
       });
 
-      setTimeout(() => {
+      setTimeout(function() {
         toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
+        setTimeout(function() { toast.remove(); }, 300);
       }, 4500);
     }
 
     // Dynamically check WHOOP connection status
     async function checkConnectionStatus() {
       try {
-        const res = await fetch('/api/status');
+        var res = await fetch('/api/status');
         if (res.ok) {
-          const data = await res.json();
-          const badgeEl = document.getElementById('statusBadgeEl');
-          const textEl = document.getElementById('statusTextEl');
+          var data = await res.json();
+          var badgeEl = document.getElementById('statusBadgeEl');
+          var textEl = document.getElementById('statusTextEl');
           if (badgeEl && textEl) {
-            const dot = badgeEl.querySelector('.status-dot');
+            var dot = badgeEl.querySelector('.status-dot');
             if (data.authenticated) {
               if (dot) dot.className = 'status-dot active';
               textEl.innerText = 'Connected';
@@ -1599,10 +1598,11 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     // Fetch Performance Trend Insights for Latest 10 Runs (Groq LLM)
-    async function fetchAIInsights(isManualRefresh = false) {
-      const el = document.getElementById('insightsContent');
-      const tagEl = document.getElementById('aiSourceTag');
-      const btn = document.getElementById('aiRefreshBtn');
+    async function fetchAIInsights(isManualRefresh) {
+      if (isManualRefresh === undefined) isManualRefresh = false;
+      var el = document.getElementById('insightsContent');
+      var tagEl = document.getElementById('aiSourceTag');
+      var btn = document.getElementById('aiRefreshBtn');
       if (btn) {
         btn.innerText = 'Analyzing...';
         btn.disabled = true;
@@ -1618,12 +1618,12 @@ app.get('/', async (req: Request, res: Response) => {
       }
 
       try {
-        const res = await fetch('/api/insights', {
+        var res = await fetch('/api/insights', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ runs: allRunsCache })
         });
-        const data = await res.json();
+        var data = await res.json();
         if (data && data.insight) {
           el.innerText = data.insight;
           if (tagEl) {
@@ -1646,37 +1646,35 @@ app.get('/', async (req: Request, res: Response) => {
 
     // Load Settings from Server Database (Cross-Device Synced)
     async function initSettings() {
-      checkConnectionStatus();
-
-      // Load fallback from localStorage first
-      const savedGoal = localStorage.getItem('monthlyTargetKm');
-      if (savedGoal && !isNaN(Number(savedGoal))) {
-        monthlyTargetKmSetting = Number(savedGoal);
-      }
-      document.getElementById('monthlyGoalInput').value = monthlyTargetKmSetting;
-
-      const savedRace = localStorage.getItem('upcomingRace');
-      if (savedRace) {
-        try {
-          upcomingRaceSetting = JSON.parse(savedRace);
-          document.getElementById('raceNameInput').value = upcomingRaceSetting.name || '';
-          document.getElementById('raceDateInput').value = upcomingRaceSetting.date || '';
-          document.getElementById('raceDistInput').value = upcomingRaceSetting.distance || '';
-        } catch (e) {}
-      }
-
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme) {
-        currentThemeSetting = savedTheme;
-        setThemeMode(savedTheme, false);
-      }
-      updateRaceCountdownWidget();
-
-      // Fetch authoritative settings from DB API across all devices
       try {
-        const res = await fetch('/api/settings');
+        checkConnectionStatus();
+
+        var savedGoal = localStorage.getItem('monthlyTargetKm');
+        if (savedGoal && !isNaN(Number(savedGoal))) {
+          monthlyTargetKmSetting = Number(savedGoal);
+        }
+        document.getElementById('monthlyGoalInput').value = monthlyTargetKmSetting;
+
+        var savedRace = localStorage.getItem('upcomingRace');
+        if (savedRace) {
+          try {
+            upcomingRaceSetting = JSON.parse(savedRace);
+            document.getElementById('raceNameInput').value = upcomingRaceSetting.name || '';
+            document.getElementById('raceDateInput').value = upcomingRaceSetting.date || '';
+            document.getElementById('raceDistInput').value = upcomingRaceSetting.distance || '';
+          } catch (e) {}
+        }
+
+        var savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+          currentThemeSetting = savedTheme;
+          setThemeMode(savedTheme, false);
+        }
+        updateRaceCountdownWidget();
+
+        var res = await fetch('/api/settings');
         if (res.ok) {
-          const data = await res.json();
+          var data = await res.json();
           if (data.monthlyTargetKm) {
             monthlyTargetKmSetting = Number(data.monthlyTargetKm);
             document.getElementById('monthlyGoalInput').value = monthlyTargetKmSetting;
@@ -1726,13 +1724,13 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     async function saveUpcomingRaceSetting() {
-      const btn = document.getElementById('saveRaceBtn');
+      var btn = document.getElementById('saveRaceBtn');
       btn.innerText = 'Saving...';
       btn.disabled = true;
 
-      const name = document.getElementById('raceNameInput').value.trim();
-      const date = document.getElementById('raceDateInput').value;
-      const distance = document.getElementById('raceDistInput').value;
+      var name = document.getElementById('raceNameInput').value.trim();
+      var date = document.getElementById('raceDateInput').value;
+      var distance = document.getElementById('raceDistInput').value;
 
       if (!name || !date) {
         showToastNotification('Please enter both Race Name and Race Date.', 'error', 'Validation Error');
@@ -1741,7 +1739,7 @@ app.get('/', async (req: Request, res: Response) => {
         return;
       }
 
-      upcomingRaceSetting = { name, date, distance };
+      upcomingRaceSetting = { name: name, date: date, distance: distance };
       localStorage.setItem('upcomingRace', JSON.stringify(upcomingRaceSetting));
       updateRaceCountdownWidget();
       await syncSettingsToServer();
@@ -1753,9 +1751,9 @@ app.get('/', async (req: Request, res: Response) => {
     function updateRaceCountdownWidget() {
       if (raceCountdownTimer) clearInterval(raceCountdownTimer);
 
-      const titleEl = document.getElementById('raceTitleText');
-      const subtextEl = document.getElementById('raceSubtext');
-      const clockGroup = document.getElementById('raceClockGroup');
+      var titleEl = document.getElementById('raceTitleText');
+      var subtextEl = document.getElementById('raceSubtext');
+      var clockGroup = document.getElementById('raceClockGroup');
 
       if (!upcomingRaceSetting || !upcomingRaceSetting.date) {
         titleEl.innerText = 'No Upcoming Race Scheduled';
@@ -1764,17 +1762,17 @@ app.get('/', async (req: Request, res: Response) => {
         return;
       }
 
-      const distStr = upcomingRaceSetting.distance ? ' — ' + Number(upcomingRaceSetting.distance).toFixed(1) + ' km' : '';
+      var distStr = upcomingRaceSetting.distance ? ' — ' + Number(upcomingRaceSetting.distance).toFixed(1) + ' km' : '';
       titleEl.innerText = upcomingRaceSetting.name + distStr;
       
-      const raceTargetTime = new Date(upcomingRaceSetting.date + 'T00:00:00').getTime();
-      const formattedDate = new Date(upcomingRaceSetting.date + 'T00:00:00').toLocaleDateString([], { dateStyle: 'full' });
+      var raceTargetTime = new Date(upcomingRaceSetting.date + 'T00:00:00').getTime();
+      var formattedDate = new Date(upcomingRaceSetting.date + 'T00:00:00').toLocaleDateString([], { dateStyle: 'full' });
       subtextEl.innerText = 'Target Event Date: ' + formattedDate;
       clockGroup.style.display = 'flex';
 
       function tick() {
-        const now = new Date().getTime();
-        const diff = raceTargetTime - now;
+        var now = new Date().getTime();
+        var diff = raceTargetTime - now;
 
         if (diff <= 0) {
           document.getElementById('cntDays').innerText = '00';
@@ -1785,10 +1783,10 @@ app.get('/', async (req: Request, res: Response) => {
           return;
         }
 
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+        var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        var secs = Math.floor((diff % (1000 * 60)) / 1000);
 
         document.getElementById('cntDays').innerText = days < 10 ? '0' + days : days;
         document.getElementById('cntHours').innerText = hours < 10 ? '0' + hours : hours;
@@ -1800,23 +1798,24 @@ app.get('/', async (req: Request, res: Response) => {
       raceCountdownTimer = setInterval(tick, 1000);
     }
 
-    async function setThemeMode(mode, triggerRender = true) {
+    async function setThemeMode(mode, triggerRender) {
+      if (triggerRender === undefined) triggerRender = true;
       currentThemeSetting = mode;
-      const lightBtn = document.getElementById('themeLightBtn');
-      const darkBtn = document.getElementById('themeDarkBtn');
+      var lightBtn = document.getElementById('themeLightBtn');
+      var darkBtn = document.getElementById('themeDarkBtn');
 
       if (mode === 'dark') {
         document.body.classList.add('dark-mode');
         localStorage.setItem('theme', 'dark');
         if (lightBtn) lightBtn.classList.remove('active');
         if (darkBtn) darkBtn.classList.add('active');
-        Chart.defaults.color = '#94a3b8';
+        if (window.Chart) Chart.defaults.color = '#94a3b8';
       } else {
         document.body.classList.remove('dark-mode');
         localStorage.setItem('theme', 'light');
         if (lightBtn) lightBtn.classList.add('active');
         if (darkBtn) darkBtn.classList.remove('active');
-        Chart.defaults.color = '#64748b';
+        if (window.Chart) Chart.defaults.color = '#64748b';
       }
 
       if (triggerRender) {
@@ -1828,12 +1827,12 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     async function saveMonthlyGoalSetting() {
-      const btn = document.getElementById('saveGoalBtn');
+      var btn = document.getElementById('saveGoalBtn');
       btn.innerText = 'Saving...';
       btn.disabled = true;
 
-      const inp = document.getElementById('monthlyGoalInput');
-      const val = Number(inp.value);
+      var inp = document.getElementById('monthlyGoalInput');
+      var val = Number(inp.value);
       if (val && val > 0) {
         monthlyTargetKmSetting = val;
         localStorage.setItem('monthlyTargetKm', val);
@@ -1853,79 +1852,78 @@ app.get('/', async (req: Request, res: Response) => {
     initSettings();
 
     function switchTab(tabId, btnEl) {
-      document.querySelectorAll('.top-tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      try {
+        document.querySelectorAll('.top-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+        document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
 
-      // Highlight active button in both desktop & mobile bars
-      document.querySelectorAll('.top-tab-btn').forEach(b => {
-        if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(tabId)) {
-          b.classList.add('active');
+        document.querySelectorAll('.top-tab-btn').forEach(function(b) {
+          if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(tabId) !== -1) {
+            b.classList.add('active');
+          }
+        });
+
+        var targetContent = document.getElementById(tabId);
+        if (targetContent) targetContent.classList.add('active');
+
+        if (tabId === 'analyticsTab') {
+          setTimeout(function() {
+            if (chartInstanceDistancePace) chartInstanceDistancePace.resize();
+            if (chartInstanceHrZones) chartInstanceHrZones.resize();
+            if (chartInstanceStrainHr) chartInstanceStrainHr.resize();
+            if (chartInstanceWeeklyMileage) chartInstanceWeeklyMileage.resize();
+          }, 50);
         }
-      });
-
-      const targetContent = document.getElementById(tabId);
-      if (targetContent) targetContent.classList.add('active');
-
-      // Refresh settings when switching tabs
-      initSettings();
-
-      // Trigger chart resize if Analytics tab opened
-      if (tabId === 'analyticsTab') {
-        setTimeout(() => {
-          if (chartInstanceDistancePace) chartInstanceDistancePace.resize();
-          if (chartInstanceHrZones) chartInstanceHrZones.resize();
-          if (chartInstanceStrainHr) chartInstanceStrainHr.resize();
-          if (chartInstanceWeeklyMileage) chartInstanceWeeklyMileage.resize();
-        }, 50);
+      } catch (e) {
+        console.error('switchTab error:', e);
       }
     }
 
     function syncFilterUI() {
-      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.preset-btn').forEach(function(b) { b.classList.remove('active'); });
       if (activePreset) {
-        document.querySelectorAll('.preset-' + activePreset).forEach(b => b.classList.add('active'));
+        document.querySelectorAll('.preset-' + activePreset).forEach(function(b) { b.classList.add('active'); });
       }
-      document.querySelectorAll('.startDateInput').forEach(inp => inp.value = currentStartDate || '');
-      document.querySelectorAll('.endDateInput').forEach(inp => inp.value = currentEndDate || '');
+      document.querySelectorAll('.startDateInput').forEach(function(inp) { inp.value = currentStartDate || ''; });
+      document.querySelectorAll('.endDateInput').forEach(function(inp) { inp.value = currentEndDate || ''; });
     }
 
     function calcPaceDec(durationMs, distKm) {
       if (!distKm || distKm <= 0 || !durationMs) return null;
-      const totalMins = durationMs / 60000;
-      const pace = totalMins / distKm;
+      var totalMins = durationMs / 60000;
+      var pace = totalMins / distKm;
       return (pace > 30 || pace < 2) ? null : pace;
     }
 
     function calcPaceString(durationMs, distKm) {
-      const paceDec = calcPaceDec(durationMs, distKm);
+      var paceDec = calcPaceDec(durationMs, distKm);
       if (!paceDec) return 'N/A';
-      const mins = Math.floor(paceDec);
-      let secs = Math.round((paceDec - mins) * 60);
-      let finalMins = mins;
+      var mins = Math.floor(paceDec);
+      var secs = Math.round((paceDec - mins) * 60);
+      var finalMins = mins;
       if (secs === 60) {
         secs = 0;
         finalMins += 1;
       }
-      const secsStr = secs < 10 ? '0' + secs : secs;
-      return \`\${finalMins}:\${secsStr} /km\`;
+      var secsStr = secs < 10 ? '0' + secs : secs;
+      return finalMins + ':' + secsStr + ' /km';
     }
 
     function formatPaceDecToString(paceDec) {
       if (!paceDec) return 'N/A';
-      const mins = Math.floor(paceDec);
-      let secs = Math.round((paceDec - mins) * 60);
-      let finalMins = mins;
+      var mins = Math.floor(paceDec);
+      var secs = Math.round((paceDec - mins) * 60);
+      var finalMins = mins;
       if (secs === 60) {
         secs = 0;
         finalMins += 1;
       }
-      const secsStr = secs < 10 ? '0' + secs : secs;
-      return \`\${finalMins}:\${secsStr} /km\`;
+      var secsStr = secs < 10 ? '0' + secs : secs;
+      return finalMins + ':' + secsStr + ' /km';
     }
 
     function extractCalories(r) {
       if (r.calories) return Math.round(Number(r.calories));
-      const rawScore = r.raw_json && r.raw_json.score ? r.raw_json.score : null;
+      var rawScore = r.raw_json && r.raw_json.score ? r.raw_json.score : null;
       if (rawScore && rawScore.kilojoule) return Math.round(Number(rawScore.kilojoule) / 4.184);
       if (rawScore && rawScore.kilojoules) return Math.round(Number(rawScore.kilojoules) / 4.184);
       if (r.kilojoules) return Math.round(Number(r.kilojoules) / 4.184);
@@ -1933,44 +1931,42 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     async function loadRuns() {
-      const tbody = document.getElementById('runsTableBody');
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-muted)">Loading...</td></tr>';
+      var tbody = document.getElementById('runsTableBody');
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-muted)">Loading...</td></tr>';
+      }
 
       try {
-        // 1. Fetch All Runs (unfiltered) to compute PRs, Current Calendar Month Goal, and Latest 10 Insights
-        const allRes = await fetch('/api/runs');
-        const allData = await allRes.json();
+        var allRes = await fetch('/api/runs');
+        var allData = await allRes.json();
         allRunsCache = allData.runs || [];
 
-        // Always compute PRs & Monthly Goal based on full dataset
         calculatePRsAndGoals(allRunsCache);
         fetchAIInsights(false);
 
-        // 2. Determine Filtered Runs for History table, Period KPIs, and Charts
-        let filteredRuns = allRunsCache;
+        var filteredRuns = allRunsCache;
         if (currentStartDate || currentEndDate) {
-          const params = new URLSearchParams();
+          var params = new URLSearchParams();
           if (currentStartDate) params.append('startDate', currentStartDate);
           if (currentEndDate) params.append('endDate', currentEndDate);
-          const filteredRes = await fetch('/api/runs?' + params.toString());
-          const filteredData = await filteredRes.json();
+          var filteredRes = await fetch('/api/runs?' + params.toString());
+          var filteredData = await filteredRes.json();
           filteredRuns = filteredData.runs || [];
         }
 
-        // Update Summary KPI Cards for current selected period
-        let totalDistKm = 0;
-        let totalDurationMs = 0;
-        let totalPaceDistKm = 0;
-        let totalPaceDurationMs = 0;
-        let totalCaloriesKcal = 0;
-        let totalStrain = 0;
-        let strainCount = 0;
-        let totalAvgHr = 0;
-        let hrCount = 0;
-        let maxHrReached = 0;
+        var totalDistKm = 0;
+        var totalDurationMs = 0;
+        var totalPaceDistKm = 0;
+        var totalPaceDurationMs = 0;
+        var totalCaloriesKcal = 0;
+        var totalStrain = 0;
+        var strainCount = 0;
+        var totalAvgHr = 0;
+        var hrCount = 0;
+        var maxHrReached = 0;
 
-        filteredRuns.forEach(r => {
-          let distKm = 0;
+        filteredRuns.forEach(function(r) {
+          var distKm = 0;
           if (r.distance_km) distKm = Number(r.distance_km);
           else if (r.distance_meters) distKm = Number(r.distance_meters) / 1000;
           else if (r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
@@ -1985,7 +1981,7 @@ app.get('/', async (req: Request, res: Response) => {
             totalPaceDurationMs += Number(r.duration_ms);
           }
 
-          const calVal = extractCalories(r);
+          var calVal = extractCalories(r);
           if (calVal) totalCaloriesKcal += calVal;
 
           if (r.strain) { totalStrain += Number(r.strain); strainCount++; }
@@ -2000,32 +1996,33 @@ app.get('/', async (req: Request, res: Response) => {
         document.getElementById('kpiAvgPace').innerText = calcPaceString(totalPaceDurationMs, totalPaceDistKm);
         document.getElementById('kpiCalories').innerText = totalCaloriesKcal > 0 ? totalCaloriesKcal.toLocaleString() + ' kcal' : 'N/A';
 
-        const totalMins = Math.round(totalDurationMs / 60000);
-        const hours = Math.floor(totalMins / 60);
-        const mins = totalMins % 60;
-        document.getElementById('kpiDuration').innerText = hours > 0 ? \`\${hours}h \${mins}m\` : \`\${mins}m\`;
+        var totalMins = Math.round(totalDurationMs / 60000);
+        var hours = Math.floor(totalMins / 60);
+        var mins = totalMins % 60;
+        document.getElementById('kpiDuration').innerText = hours > 0 ? hours + 'h ' + mins + 'm' : mins + 'm';
 
         document.getElementById('kpiAvgStrain').innerText = strainCount > 0 ? (totalStrain / strainCount).toFixed(1) : 'N/A';
         
-        const avgHrVal = hrCount > 0 ? Math.round(totalAvgHr / hrCount) : null;
-        document.getElementById('kpiAvgHr').innerText = avgHrVal ? \`\${avgHrVal} / \${maxHrReached} bpm\` : 'N/A';
+        var avgHrVal = hrCount > 0 ? Math.round(totalAvgHr / hrCount) : null;
+        document.getElementById('kpiAvgHr').innerText = avgHrVal ? avgHrVal + ' / ' + maxHrReached + ' bpm' : 'N/A';
 
-        // Render History Table Rows
+        if (!tbody) return;
+
         if (filteredRuns.length === 0) {
           tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-muted)">No running activities found for the selected date period.</td></tr>';
           renderCharts([]);
           return;
         }
 
-        tbody.innerHTML = filteredRuns.map(r => {
-          const dateStr = new Date(r.start_time).toLocaleString([], {
+        tbody.innerHTML = filteredRuns.map(function(r) {
+          var dateStr = new Date(r.start_time).toLocaleString([], {
             dateStyle: 'medium',
             timeStyle: 'short',
           });
-          const durationMin = Math.round(r.duration_ms / 60000);
+          var durationMin = Math.round(r.duration_ms / 60000);
           
-          let distKmNum = 0;
-          let distKmStr = 'N/A';
+          var distKmNum = 0;
+          var distKmStr = 'N/A';
           if (r.distance_km) {
             distKmNum = Number(r.distance_km);
             distKmStr = distKmNum.toFixed(2) + ' km';
@@ -2037,465 +2034,476 @@ app.get('/', async (req: Request, res: Response) => {
             distKmStr = distKmNum.toFixed(2) + ' km';
           }
 
-          const paceStr = calcPaceString(r.duration_ms, distKmNum);
-          const calVal = extractCalories(r);
-          const calStr = calVal ? calVal + ' kcal' : 'N/A';
+          var paceStr = calcPaceString(r.duration_ms, distKmNum);
+          var calVal = extractCalories(r);
+          var calStr = calVal ? calVal + ' kcal' : 'N/A';
 
-          return \`
-            <tr>
-              <td><strong>\${dateStr}</strong></td>
-              <td>\${r.sport_name}</td>
-              <td><span class="badge badge-dist">\${distKmStr}</span></td>
-              <td><span class="badge">\${paceStr}</span></td>
-              <td>\${durationMin} mins</td>
-              <td><span class="badge">\${r.strain ? Number(r.strain).toFixed(1) : 'N/A'}</span></td>
-              <td><span class="badge">\${r.average_heart_rate || 'N/A'} / \${r.max_heart_rate || 'N/A'} bpm</span></td>
-              <td><span class="badge">\${calStr}</span></td>
-            </tr>
-          \`;
+          return '<tr>' +
+            '<td><strong>' + dateStr + '</strong></td>' +
+            '<td>' + r.sport_name + '</td>' +
+            '<td><span class="badge badge-dist">' + distKmStr + '</span></td>' +
+            '<td><span class="badge">' + paceStr + '</span></td>' +
+            '<td>' + durationMin + ' mins</td>' +
+            '<td><span class="badge">' + (r.strain ? Number(r.strain).toFixed(1) : 'N/A') + '</span></td>' +
+            '<td><span class="badge">' + (r.average_heart_rate || 'N/A') + ' / ' + (r.max_heart_rate || 'N/A') + ' bpm</span></td>' +
+            '<td><span class="badge">' + calStr + '</span></td>' +
+          '</tr>';
         }).join('');
 
         renderCharts(filteredRuns);
 
       } catch (err) {
-        tbody.innerHTML = \`<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: #ef4444">Error loading data: \${err.message}</td></tr>\`;
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: #ef4444">Error loading data: ' + err.message + '</td></tr>';
+        }
       }
     }
 
     function calculatePRsAndGoals(allRuns) {
       if (!allRuns || allRuns.length === 0) return;
 
-      // 1. Personal Records (PRs) from ALL runs
-      let longestRun = 0, longestRunDate = '';
-      let fastestPaceDec = 999, fastestPaceStr = 'N/A', fastestPaceDate = '';
-      let maxStrain = 0, maxStrainDate = '';
-      let maxCalories = 0, maxCalDate = '';
+      try {
+        var longestRun = 0, longestRunDate = '';
+        var fastestPaceDec = 999, fastestPaceStr = 'N/A', fastestPaceDate = '';
+        var maxStrain = 0, maxStrainDate = '';
+        var maxCalories = 0, maxCalDate = '';
 
-      // 2. Current Calendar Month Goal
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth(); // 0-indexed
-      const monthName = now.toLocaleString('default', { month: 'long' });
-      let thisMonthKm = 0;
+        var now = new Date();
+        var currentYear = now.getFullYear();
+        var currentMonth = now.getMonth();
+        var monthName = now.toLocaleString('default', { month: 'long' });
+        var thisMonthKm = 0;
 
-      allRuns.forEach(r => {
-        const d = new Date(r.start_time);
-        const dStr = (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear();
+        allRuns.forEach(function(r) {
+          var d = new Date(r.start_time);
+          var dStr = (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear();
 
-        let distKm = 0;
-        if (r.distance_km) distKm = Number(r.distance_km);
-        else if (r.distance_meters) distKm = Number(r.distance_meters) / 1000;
-        else if (r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
-          distKm = Number(r.raw_json.score.distance_meter) / 1000;
-        }
-
-        // Longest Run
-        if (distKm > longestRun) {
-          longestRun = distKm;
-          longestRunDate = dStr;
-        }
-
-        // Fastest Pace (for runs > 0.5 km)
-        if (distKm > 0.5 && r.duration_ms) {
-          const paceDec = calcPaceDec(r.duration_ms, distKm);
-          if (paceDec && paceDec < fastestPaceDec) {
-            fastestPaceDec = paceDec;
-            fastestPaceStr = formatPaceDecToString(paceDec);
-            fastestPaceDate = dStr;
+          var distKm = 0;
+          if (r.distance_km) distKm = Number(r.distance_km);
+          else if (r.distance_meters) distKm = Number(r.distance_meters) / 1000;
+          else if (r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+            distKm = Number(r.raw_json.score.distance_meter) / 1000;
           }
-        }
 
-        // Highest Strain
-        if (r.strain && Number(r.strain) > maxStrain) {
-          maxStrain = Number(r.strain);
-          maxStrainDate = dStr;
-        }
+          if (distKm > longestRun) {
+            longestRun = distKm;
+            longestRunDate = dStr;
+          }
 
-        // Max Calories
-        const cal = extractCalories(r);
-        if (cal && cal > maxCalories) {
-          maxCalories = cal;
-          maxCalDate = dStr;
-        }
+          if (distKm > 0.5 && r.duration_ms) {
+            var paceDec = calcPaceDec(r.duration_ms, distKm);
+            if (paceDec && paceDec < fastestPaceDec) {
+              fastestPaceDec = paceDec;
+              fastestPaceStr = formatPaceDecToString(paceDec);
+              fastestPaceDate = dStr;
+            }
+          }
 
-        // Current Calendar Month Accumulation
-        if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
-          thisMonthKm += distKm;
-        }
-      });
+          if (r.strain && Number(r.strain) > maxStrain) {
+            maxStrain = Number(r.strain);
+            maxStrainDate = dStr;
+          }
 
-      document.getElementById('prLongestRun').innerText = longestRun > 0 ? longestRun.toFixed(2) + ' km' : '-';
-      document.getElementById('prLongestDate').innerText = longestRunDate || 'All Time';
+          var cal = extractCalories(r);
+          if (cal && cal > maxCalories) {
+            maxCalories = cal;
+            maxCalDate = dStr;
+          }
 
-      document.getElementById('prFastestPace').innerText = fastestPaceStr;
-      document.getElementById('prFastestDate').innerText = fastestPaceDate || 'All Time';
+          if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+            thisMonthKm += distKm;
+          }
+        });
 
-      document.getElementById('prHighestStrain').innerText = maxStrain > 0 ? maxStrain.toFixed(1) : '-';
-      document.getElementById('prStrainDate').innerText = maxStrainDate || 'WHOOP 0-21';
+        document.getElementById('prLongestRun').innerText = longestRun > 0 ? longestRun.toFixed(2) + ' km' : '-';
+        document.getElementById('prLongestDate').innerText = longestRunDate || 'All Time';
 
-      document.getElementById('prMaxCalories').innerText = maxCalories > 0 ? maxCalories.toLocaleString() + ' kcal' : '-';
-      document.getElementById('prCaloriesDate').innerText = maxCalDate || 'Single Session';
+        document.getElementById('prFastestPace').innerText = fastestPaceStr;
+        document.getElementById('prFastestDate').innerText = fastestPaceDate || 'All Time';
 
-      // Current Calendar Month Target Goal
-      const targetKm = monthlyTargetKmSetting || 100;
-      const percent = Math.min(100, Math.round((thisMonthKm / targetKm) * 100));
-      const remainingKm = Math.max(0, targetKm - thisMonthKm);
+        document.getElementById('prHighestStrain').innerText = maxStrain > 0 ? maxStrain.toFixed(1) : '-';
+        document.getElementById('prStrainDate').innerText = maxStrainDate || 'WHOOP 0-21';
 
-      document.getElementById('goalTitleText').innerText = monthName + ' ' + currentYear + ' Target Goal (' + targetKm + ' km)';
-      document.getElementById('goalPercentage').innerText = percent + '% Completed';
-      document.getElementById('goalProgressBar').style.width = percent + '%';
-      document.getElementById('goalProgressSubtext').innerText = thisMonthKm.toFixed(2) + ' km / ' + targetKm.toFixed(2) + ' km completed in ' + monthName;
-      document.getElementById('goalRemainingSubtext').innerText = remainingKm > 0 ? remainingKm.toFixed(2) + ' km remaining in ' + monthName : 'Goal achieved for ' + monthName + '!';
+        document.getElementById('prMaxCalories').innerText = maxCalories > 0 ? maxCalories.toLocaleString() + ' kcal' : '-';
+        document.getElementById('prCaloriesDate').innerText = maxCalDate || 'Single Session';
+
+        var targetKm = monthlyTargetKmSetting || 100;
+        var percent = Math.min(100, Math.round((thisMonthKm / targetKm) * 100));
+        var remainingKm = Math.max(0, targetKm - thisMonthKm);
+
+        document.getElementById('goalTitleText').innerText = monthName + ' ' + currentYear + ' Target Goal (' + targetKm + ' km)';
+        document.getElementById('goalPercentage').innerText = percent + '% Completed';
+        document.getElementById('goalProgressBar').style.width = percent + '%';
+        document.getElementById('goalProgressSubtext').innerText = thisMonthKm.toFixed(2) + ' km / ' + targetKm.toFixed(2) + ' km completed in ' + monthName;
+        document.getElementById('goalRemainingSubtext').innerText = remainingKm > 0 ? remainingKm.toFixed(2) + ' km remaining in ' + monthName : 'Goal achieved for ' + monthName + '!';
+      } catch (e) {
+        console.error('calculatePRsAndGoals error:', e);
+      }
     }
 
     function renderLatest10Insights(allRuns) {
-      const el = document.getElementById('insightsContent');
+      var el = document.getElementById('insightsContent');
+      if (!el) return;
       if (!allRuns || allRuns.length === 0) {
         el.innerText = 'No running data available.';
         return;
       }
 
-      // Sort by start_time descending and take top 10 runs
-      const latest10 = [...allRuns]
-        .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
-        .slice(0, 10);
+      try {
+        var latest10 = [...allRuns]
+          .sort(function(a, b) { return new Date(b.start_time).getTime() - new Date(a.start_time).getTime(); })
+          .slice(0, 10);
 
-      let totalDistKm = 0;
-      let totalPaceDistKm = 0;
-      let totalPaceDurationMs = 0;
-      let totalStrain = 0;
-      let strainCount = 0;
-      let totalAvgHr = 0;
-      let hrCount = 0;
+        var totalDistKm = 0;
+        var totalPaceDistKm = 0;
+        var totalPaceDurationMs = 0;
+        var totalStrain = 0;
+        var strainCount = 0;
+        var totalAvgHr = 0;
+        var hrCount = 0;
 
-      latest10.forEach(r => {
-        let distKm = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters)/1000 : 0);
-        if (distKm === 0 && r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
-          distKm = Number(r.raw_json.score.distance_meter) / 1000;
+        latest10.forEach(function(r) {
+          var distKm = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters)/1000 : 0);
+          if (distKm === 0 && r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+            distKm = Number(r.raw_json.score.distance_meter) / 1000;
+          }
+          totalDistKm += distKm;
+          if (distKm > 0.1 && r.duration_ms) {
+            totalPaceDistKm += distKm;
+            totalPaceDurationMs += Number(r.duration_ms);
+          }
+          if (r.strain) { totalStrain += Number(r.strain); strainCount++; }
+          if (r.average_heart_rate) { totalAvgHr += Number(r.average_heart_rate); hrCount++; }
+        });
+
+        var avgPaceStr = calcPaceString(totalPaceDurationMs, totalPaceDistKm);
+        var avgStrainVal = strainCount > 0 ? (totalStrain / strainCount) : 0;
+        var avgHrVal = hrCount > 0 ? Math.round(totalAvgHr / hrCount) : null;
+
+        var trendMsg = 'Across your latest ' + latest10.length + ' runs, you logged a total of ' + totalDistKm.toFixed(2) + ' km at an average pace of ' + avgPaceStr + '.';
+
+        if (avgStrainVal > 0) {
+          trendMsg += ' Your workouts averaged a WHOOP strain of ' + avgStrainVal.toFixed(1) + '/21';
         }
-        totalDistKm += distKm;
-        if (distKm > 0.1 && r.duration_ms) {
-          totalPaceDistKm += distKm;
-          totalPaceDurationMs += Number(r.duration_ms);
+        if (avgHrVal) {
+          trendMsg += ' with an average heart rate of ' + avgHrVal + ' BPM.';
+        } else {
+          trendMsg += '.';
         }
-        if (r.strain) { totalStrain += Number(r.strain); strainCount++; }
-        if (r.average_heart_rate) { totalAvgHr += Number(r.average_heart_rate); hrCount++; }
-      });
 
-      const avgPaceStr = calcPaceString(totalPaceDurationMs, totalPaceDistKm);
-      const avgStrainVal = strainCount > 0 ? (totalStrain / strainCount) : 0;
-      const avgHrVal = hrCount > 0 ? Math.round(totalAvgHr / hrCount) : null;
+        if (latest10.length >= 5) {
+          trendMsg += ' Solid execution across recent sessions!';
+        }
 
-      let trendMsg = \`Across your latest \${latest10.length} runs, you logged a total of \${totalDistKm.toFixed(2)} km at an average pace of \${avgPaceStr}.\`;
-
-      if (avgStrainVal > 0) {
-        trendMsg += \` Your workouts averaged a WHOOP strain of \${avgStrainVal.toFixed(1)}/21\`;
-      }
-      if (avgHrVal) {
-        trendMsg += \` with an average heart rate of \${avgHrVal} BPM.\`;
-      } else {
-        trendMsg += \`.\`;
-      }
-
-      if (latest10.length >= 5) {
-        trendMsg += \` Solid execution across recent sessions!\`;
-      }
-
-      el.innerText = trendMsg;
+        el.innerText = trendMsg;
+      } catch (e) {}
     }
 
     function renderCharts(runs) {
-      const isDark = document.body.classList.contains('dark-mode');
-      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+      if (!window.Chart) return;
 
-      const chronoRuns = [...runs].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+      try {
+        var isDark = document.body.classList.contains('dark-mode');
+        var gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
 
-      const labels = chronoRuns.map(r => {
-        const d = new Date(r.start_time);
-        return (d.getMonth() + 1) + '/' + d.getDate();
-      });
+        var chronoRuns = [...runs].sort(function(a, b) { return new Date(a.start_time).getTime() - new Date(b.start_time).getTime(); });
 
-      const distances = chronoRuns.map(r => {
-        if (r.distance_km) return Number(r.distance_km);
-        if (r.distance_meters) return Number(r.distance_meters) / 1000;
-        if (r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
-          return Number(r.raw_json.score.distance_meter) / 1000;
-        }
-        return 0;
-      });
+        var labels = chronoRuns.map(function(r) {
+          var d = new Date(r.start_time);
+          return (d.getMonth() + 1) + '/' + d.getDate();
+        });
 
-      const paces = chronoRuns.map(r => {
-        let dist = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters)/1000 : 0);
-        if (dist === 0 && r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
-          dist = Number(r.raw_json.score.distance_meter) / 1000;
-        }
-        return calcPaceDec(r.duration_ms, dist);
-      });
+        var distances = chronoRuns.map(function(r) {
+          if (r.distance_km) return Number(r.distance_km);
+          if (r.distance_meters) return Number(r.distance_meters) / 1000;
+          if (r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+            return Number(r.raw_json.score.distance_meter) / 1000;
+          }
+          return 0;
+        });
 
-      const strains = chronoRuns.map(r => r.strain ? Number(r.strain) : null);
-      const avgHrs = chronoRuns.map(r => r.average_heart_rate ? Number(r.average_heart_rate) : null);
+        var paces = chronoRuns.map(function(r) {
+          var dist = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters)/1000 : 0);
+          if (dist === 0 && r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+            dist = Number(r.raw_json.score.distance_meter) / 1000;
+          }
+          return calcPaceDec(r.duration_ms, dist);
+        });
 
-      const zoomPluginConfig = {
-        zoom: {
-          wheel: { enabled: true },
-          pinch: { enabled: true },
-          mode: 'x',
-        },
-        pan: { enabled: true, mode: 'x' }
-      };
+        var strains = chronoRuns.map(function(r) { return r.strain ? Number(r.strain) : null; });
+        var avgHrs = chronoRuns.map(function(r) { return r.average_heart_rate ? Number(r.average_heart_rate) : null; });
 
-      // --- Chart 1: Distance & Pace Progression ---
-      if (chartInstanceDistancePace) chartInstanceDistancePace.destroy();
-      const ctx1 = document.getElementById('chartDistancePace').getContext('2d');
-      chartInstanceDistancePace = new Chart(ctx1, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'Distance (km)',
-              data: distances,
-              backgroundColor: isDark ? 'rgba(0, 198, 255, 0.45)' : 'rgba(0, 128, 255, 0.45)',
-              borderColor: isDark ? '#00c6ff' : '#0080ff',
-              borderWidth: 2,
-              borderRadius: 4,
-              yAxisID: 'yDist',
+        var zoomPluginConfig = {
+          zoom: {
+            wheel: { enabled: true },
+            pinch: { enabled: true },
+            mode: 'x',
+          },
+          pan: { enabled: true, mode: 'x' }
+        };
+
+        // --- Chart 1: Distance & Pace Progression ---
+        if (chartInstanceDistancePace) chartInstanceDistancePace.destroy();
+        var canvas1 = document.getElementById('chartDistancePace');
+        if (canvas1) {
+          var ctx1 = canvas1.getContext('2d');
+          chartInstanceDistancePace = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: 'Distance (km)',
+                  data: distances,
+                  backgroundColor: isDark ? 'rgba(0, 198, 255, 0.45)' : 'rgba(0, 128, 255, 0.45)',
+                  borderColor: isDark ? '#00c6ff' : '#0080ff',
+                  borderWidth: 2,
+                  borderRadius: 4,
+                  yAxisID: 'yDist',
+                },
+                {
+                  label: 'Pace (min/km)',
+                  data: paces,
+                  type: 'line',
+                  borderColor: isDark ? '#38bdf8' : '#00a3ff',
+                  backgroundColor: isDark ? '#38bdf8' : '#00a3ff',
+                  borderWidth: 3,
+                  tension: 0.3,
+                  pointRadius: 4,
+                  yAxisID: 'yPace',
+                }
+              ]
             },
-            {
-              label: 'Pace (min/km)',
-              data: paces,
-              type: 'line',
-              borderColor: isDark ? '#38bdf8' : '#00a3ff',
-              backgroundColor: isDark ? '#38bdf8' : '#00a3ff',
-              borderWidth: 3,
-              tension: 0.3,
-              pointRadius: 4,
-              yAxisID: 'yPace',
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            zoom: zoomPluginConfig,
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  if (context.dataset.yAxisID === 'yPace') {
-                    return 'Pace: ' + formatPaceDecToString(context.raw);
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                zoom: zoomPluginConfig,
+                tooltip: {
+                  callbacks: {
+                    label: function(context) {
+                      if (context.dataset.yAxisID === 'yPace') {
+                        return 'Pace: ' + formatPaceDecToString(context.raw);
+                      }
+                      return 'Distance: ' + Number(context.raw).toFixed(2) + ' km';
+                    }
                   }
-                  return 'Distance: ' + Number(context.raw).toFixed(2) + ' km';
+                }
+              },
+              scales: {
+                x: { grid: { color: gridColor } },
+                yDist: {
+                  type: 'linear',
+                  position: 'left',
+                  title: { display: true, text: 'Distance (km)', color: isDark ? '#00c6ff' : '#0080ff' },
+                  grid: { color: gridColor }
+                },
+                yPace: {
+                  type: 'linear',
+                  position: 'right',
+                  reverse: true,
+                  title: { display: true, text: 'Pace (min/km - Faster)', color: isDark ? '#38bdf8' : '#00a3ff' },
+                  grid: { drawOnChartArea: false },
+                  ticks: {
+                    callback: function(val) { return formatPaceDecToString(val); }
+                  }
                 }
               }
             }
-          },
-          scales: {
-            x: { grid: { color: gridColor } },
-            yDist: {
-              type: 'linear',
-              position: 'left',
-              title: { display: true, text: 'Distance (km)', color: isDark ? '#00c6ff' : '#0080ff' },
-              grid: { color: gridColor }
+          });
+        }
+
+        // --- Chart 2: Heart Rate Zone Breakdown ---
+        var z1 = 0, z2 = 0, z3 = 0, z4 = 0, z5 = 0;
+        runs.forEach(function(r) {
+          var zd = (r.raw_json && r.raw_json.score && r.raw_json.score.zone_durations) || {};
+          z1 += Math.round((zd.zone_one_milli || r.zone_one_ms || 0) / 60000);
+          z2 += Math.round((zd.zone_two_milli || r.zone_two_ms || 0) / 60000);
+          z3 += Math.round((zd.zone_three_milli || r.zone_three_ms || 0) / 60000);
+          z4 += Math.round((zd.zone_four_milli || r.zone_four_ms || 0) / 60000);
+          z5 += Math.round((zd.zone_five_milli || r.zone_five_ms || 0) / 60000);
+        });
+
+        if (chartInstanceHrZones) chartInstanceHrZones.destroy();
+        var canvas2 = document.getElementById('chartHrZones');
+        if (canvas2) {
+          var ctx2 = canvas2.getContext('2d');
+          chartInstanceHrZones = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+              labels: ['Zone 1 (Recovery)', 'Zone 2 (Aerobic Base)', 'Zone 3 (Tempo)', 'Zone 4 (Threshold)', 'Zone 5 (Anaerobic Peak)'],
+              datasets: [{
+                data: [z1, z2, z3, z4, z5],
+                backgroundColor: ['#94a3b8', '#38bdf8', '#0080ff', '#0052cc', '#fc4c02'],
+                borderWidth: 0,
+                hoverOffset: 8
+              }]
             },
-            yPace: {
-              type: 'linear',
-              position: 'right',
-              reverse: true,
-              title: { display: true, text: 'Pace (min/km - Faster)', color: isDark ? '#38bdf8' : '#00a3ff' },
-              grid: { drawOnChartArea: false },
-              ticks: {
-                callback: function(val) { return formatPaceDecToString(val); }
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { position: 'right', labels: { boxWidth: 14, font: { size: 11 } } },
+                tooltip: {
+                  callbacks: {
+                    label: function(context) { return ' ' + context.label + ': ' + context.raw + ' mins'; }
+                  }
+                }
               }
             }
-          }
+          });
         }
-      });
 
-      // --- Chart 2: Heart Rate Zone Breakdown ---
-      let z1 = 0, z2 = 0, z3 = 0, z4 = 0, z5 = 0;
-      runs.forEach(r => {
-        const zd = (r.raw_json && r.raw_json.score && r.raw_json.score.zone_durations) || {};
-        z1 += Math.round((zd.zone_one_milli || r.zone_one_ms || 0) / 60000);
-        z2 += Math.round((zd.zone_two_milli || r.zone_two_ms || 0) / 60000);
-        z3 += Math.round((zd.zone_three_milli || r.zone_three_ms || 0) / 60000);
-        z4 += Math.round((zd.zone_four_milli || r.zone_four_ms || 0) / 60000);
-        z5 += Math.round((zd.zone_five_milli || r.zone_five_ms || 0) / 60000);
-      });
-
-      if (chartInstanceHrZones) chartInstanceHrZones.destroy();
-      const ctx2 = document.getElementById('chartHrZones').getContext('2d');
-      chartInstanceHrZones = new Chart(ctx2, {
-        type: 'doughnut',
-        data: {
-          labels: ['Zone 1 (Recovery)', 'Zone 2 (Aerobic Base)', 'Zone 3 (Tempo)', 'Zone 4 (Threshold)', 'Zone 5 (Anaerobic Peak)'],
-          datasets: [{
-            data: [z1, z2, z3, z4, z5],
-            backgroundColor: ['#94a3b8', '#38bdf8', '#0080ff', '#0052cc', '#fc4c02'],
-            borderWidth: 0,
-            hoverOffset: 8
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'right', labels: { boxWidth: 14, font: { size: 11 } } },
-            tooltip: {
-              callbacks: {
-                label: function(context) { return ' ' + context.label + ': ' + context.raw + ' mins'; }
+        // --- Chart 3: Strain vs Heart Rate Efficiency ---
+        if (chartInstanceStrainHr) chartInstanceStrainHr.destroy();
+        var canvas3 = document.getElementById('chartStrainHr');
+        if (canvas3) {
+          var ctx3 = canvas3.getContext('2d');
+          chartInstanceStrainHr = new Chart(ctx3, {
+            type: 'line',
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: 'WHOOP Strain (0-21)',
+                  data: strains,
+                  borderColor: isDark ? '#00c6ff' : '#0080ff',
+                  backgroundColor: isDark ? 'rgba(0, 198, 255, 0.1)' : 'rgba(0, 128, 255, 0.08)',
+                  borderWidth: 3,
+                  tension: 0.3,
+                  fill: true,
+                  yAxisID: 'yStrain'
+                },
+                {
+                  label: 'Avg Heart Rate (BPM)',
+                  data: avgHrs,
+                  borderColor: isDark ? '#38bdf8' : '#00a3ff',
+                  borderWidth: 2.5,
+                  tension: 0.3,
+                  pointRadius: 4,
+                  yAxisID: 'yHr'
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { zoom: zoomPluginConfig },
+              scales: {
+                x: { grid: { color: gridColor } },
+                yStrain: {
+                  type: 'linear',
+                  position: 'left',
+                  min: 0,
+                  max: 21,
+                  title: { display: true, text: 'Strain (0-21)', color: isDark ? '#00c6ff' : '#0080ff' },
+                  grid: { color: gridColor }
+                },
+                yHr: {
+                  type: 'linear',
+                  position: 'right',
+                  title: { display: true, text: 'Avg Heart Rate (BPM)', color: isDark ? '#38bdf8' : '#00a3ff' },
+                  grid: { drawOnChartArea: false }
+                }
               }
             }
+          });
+        }
+
+        // --- Chart 4: Weekly Mileage Progression ---
+        var weeklyMap = {};
+        chronoRuns.forEach(function(r) {
+          var d = new Date(r.start_time);
+          var day = d.getDay();
+          var diff = d.getDate() - day + (day === 0 ? -6 : 1);
+          var monday = new Date(d.setDate(diff));
+          var weekKey = (monday.getMonth() + 1) + '/' + monday.getDate();
+
+          var dist = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters)/1000 : 0);
+          if (dist === 0 && r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+            dist = Number(r.raw_json.score.distance_meter) / 1000;
           }
-        }
-      });
+          weeklyMap[weekKey] = (weeklyMap[weekKey] || 0) + dist;
+        });
 
-      // --- Chart 3: Strain vs Heart Rate Efficiency ---
-      if (chartInstanceStrainHr) chartInstanceStrainHr.destroy();
-      const ctx3 = document.getElementById('chartStrainHr').getContext('2d');
-      chartInstanceStrainHr = new Chart(ctx3, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'WHOOP Strain (0-21)',
-              data: strains,
-              borderColor: isDark ? '#00c6ff' : '#0080ff',
-              backgroundColor: isDark ? 'rgba(0, 198, 255, 0.1)' : 'rgba(0, 128, 255, 0.08)',
-              borderWidth: 3,
-              tension: 0.3,
-              fill: true,
-              yAxisID: 'yStrain'
+        var weekLabels = Object.keys(weeklyMap);
+        var weekDistances = Object.values(weeklyMap);
+
+        if (chartInstanceWeeklyMileage) chartInstanceWeeklyMileage.destroy();
+        var canvas4 = document.getElementById('chartWeeklyMileage');
+        if (canvas4) {
+          var ctx4 = canvas4.getContext('2d');
+          chartInstanceWeeklyMileage = new Chart(ctx4, {
+            type: 'bar',
+            data: {
+              labels: weekLabels.map(function(l) { return 'Wk of ' + l; }),
+              datasets: [{
+                label: 'Total Distance (km)',
+                data: weekDistances,
+                backgroundColor: isDark ? 'rgba(56, 189, 248, 0.45)' : 'rgba(0, 163, 255, 0.45)',
+                borderColor: isDark ? '#38bdf8' : '#00a3ff',
+                borderWidth: 2,
+                borderRadius: 4
+              }]
             },
-            {
-              label: 'Avg Heart Rate (BPM)',
-              data: avgHrs,
-              borderColor: isDark ? '#38bdf8' : '#00a3ff',
-              borderWidth: 2.5,
-              tension: 0.3,
-              pointRadius: 4,
-              yAxisID: 'yHr'
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { zoom: zoomPluginConfig },
-          scales: {
-            x: { grid: { color: gridColor } },
-            yStrain: {
-              type: 'linear',
-              position: 'left',
-              min: 0,
-              max: 21,
-              title: { display: true, text: 'Strain (0-21)', color: isDark ? '#00c6ff' : '#0080ff' },
-              grid: { color: gridColor }
-            },
-            yHr: {
-              type: 'linear',
-              position: 'right',
-              title: { display: true, text: 'Avg Heart Rate (BPM)', color: isDark ? '#38bdf8' : '#00a3ff' },
-              grid: { drawOnChartArea: false }
-            }
-          }
-        }
-      });
-
-      // --- Chart 4: Weekly Mileage Progression ---
-      const weeklyMap = {};
-      chronoRuns.forEach(r => {
-        const d = new Date(r.start_time);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        const monday = new Date(d.setDate(diff));
-        const weekKey = (monday.getMonth() + 1) + '/' + monday.getDate();
-
-        let dist = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters)/1000 : 0);
-        if (dist === 0 && r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
-          dist = Number(r.raw_json.score.distance_meter) / 1000;
-        }
-        weeklyMap[weekKey] = (weeklyMap[weekKey] || 0) + dist;
-      });
-
-      const weekLabels = Object.keys(weeklyMap);
-      const weekDistances = Object.values(weeklyMap);
-
-      if (chartInstanceWeeklyMileage) chartInstanceWeeklyMileage.destroy();
-      const ctx4 = document.getElementById('chartWeeklyMileage').getContext('2d');
-      chartInstanceWeeklyMileage = new Chart(ctx4, {
-        type: 'bar',
-        data: {
-          labels: weekLabels.map(l => 'Wk of ' + l),
-          datasets: [{
-            label: 'Total Distance (km)',
-            data: weekDistances,
-            backgroundColor: isDark ? 'rgba(56, 189, 248, 0.45)' : 'rgba(0, 163, 255, 0.45)',
-            borderColor: isDark ? '#38bdf8' : '#00a3ff',
-            borderWidth: 2,
-            borderRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            zoom: zoomPluginConfig,
-            tooltip: {
-              callbacks: {
-                label: function(context) { return ' Total Distance: ' + Number(context.raw).toFixed(2) + ' km'; }
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                zoom: zoomPluginConfig,
+                tooltip: {
+                  callbacks: {
+                    label: function(context) { return ' Total Distance: ' + Number(context.raw).toFixed(2) + ' km'; }
+                  }
+                }
+              },
+              scales: {
+                x: { grid: { color: gridColor } },
+                y: {
+                  title: { display: true, text: 'Weekly Distance (km)', color: isDark ? '#38bdf8' : '#00a3ff' },
+                  grid: { color: gridColor }
+                }
               }
             }
-          },
-          scales: {
-            x: { grid: { color: gridColor } },
-            y: {
-              title: { display: true, text: 'Weekly Distance (km)', color: isDark ? '#38bdf8' : '#00a3ff' },
-              grid: { color: gridColor }
-            }
-          }
+          });
         }
-      });
+      } catch (e) {
+        console.error('renderCharts error:', e);
+      }
     }
 
     // --- Modal Zoom Logic ---
     function openZoomModal(chartId, title) {
-      let sourceChart = null;
-      if (chartId === 'chartDistancePace') sourceChart = chartInstanceDistancePace;
-      else if (chartId === 'chartHrZones') sourceChart = chartInstanceHrZones;
-      else if (chartId === 'chartStrainHr') sourceChart = chartInstanceStrainHr;
-      else if (chartId === 'chartWeeklyMileage') sourceChart = chartInstanceWeeklyMileage;
+      try {
+        var sourceChart = null;
+        if (chartId === 'chartDistancePace') sourceChart = chartInstanceDistancePace;
+        else if (chartId === 'chartHrZones') sourceChart = chartInstanceHrZones;
+        else if (chartId === 'chartStrainHr') sourceChart = chartInstanceStrainHr;
+        else if (chartId === 'chartWeeklyMileage') sourceChart = chartInstanceWeeklyMileage;
 
-      if (!sourceChart) return;
+        if (!sourceChart) return;
 
-      document.getElementById('modalChartTitle').innerText = title;
-      const modal = document.getElementById('zoomModal');
-      modal.classList.add('active');
+        document.getElementById('modalChartTitle').innerText = title;
+        var modal = document.getElementById('zoomModal');
+        modal.classList.add('active');
 
-      if (modalChartInstance) modalChartInstance.destroy();
+        if (modalChartInstance) modalChartInstance.destroy();
 
-      const modalCtx = document.getElementById('modalChartCanvas').getContext('2d');
-      modalChartInstance = new Chart(modalCtx, {
-        type: sourceChart.config.type,
-        data: JSON.parse(JSON.stringify(sourceChart.config.data)),
-        options: {
-          ...sourceChart.config.options,
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            ...sourceChart.config.options.plugins,
-            zoom: {
-              zoom: {
-                wheel: { enabled: true },
-                pinch: { enabled: true },
-                mode: 'xy'
-              },
-              pan: { enabled: true, mode: 'xy' }
-            }
-          }
+        var modalCanvas = document.getElementById('modalChartCanvas');
+        if (modalCanvas) {
+          var modalCtx = modalCanvas.getContext('2d');
+          modalChartInstance = new Chart(modalCtx, {
+            type: sourceChart.config.type,
+            data: JSON.parse(JSON.stringify(sourceChart.config.data)),
+            options: Object.assign({}, sourceChart.config.options, {
+              responsive: true,
+              maintainAspectRatio: false
+            })
+          });
         }
-      });
+      } catch (e) {
+        console.error('openZoomModal error:', e);
+      }
     }
 
     function zoomInModalChart() {
@@ -2517,7 +2525,8 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     function closeZoomModal() {
-      document.getElementById('zoomModal').classList.remove('active');
+      var modal = document.getElementById('zoomModal');
+      if (modal) modal.classList.remove('active');
       if (modalChartInstance) {
         modalChartInstance.destroy();
         modalChartInstance = null;
@@ -2527,23 +2536,23 @@ app.get('/', async (req: Request, res: Response) => {
     // Synchronized Preset Selector Across All Tabs
     function selectPreset(type) {
       activePreset = type;
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
+      var now = new Date();
+      var todayStr = now.toISOString().split('T')[0];
 
       if (type === '7d') {
-        const d = new Date();
+        var d = new Date();
         d.setDate(now.getDate() - 7);
         currentStartDate = d.toISOString().split('T')[0];
         currentEndDate = todayStr;
         document.getElementById('periodLabel').innerText = '(Last 7 Days)';
       } else if (type === '30d') {
-        const d = new Date();
+        var d = new Date();
         d.setDate(now.getDate() - 30);
         currentStartDate = d.toISOString().split('T')[0];
         currentEndDate = todayStr;
         document.getElementById('periodLabel').innerText = '(Last 30 Days)';
       } else if (type === 'month') {
-        const d = new Date(now.getFullYear(), now.getMonth(), 1);
+        var d = new Date(now.getFullYear(), now.getMonth(), 1);
         currentStartDate = d.toISOString().split('T')[0];
         currentEndDate = todayStr;
         document.getElementById('periodLabel').innerText = '(This Month)';
@@ -2559,9 +2568,9 @@ app.get('/', async (req: Request, res: Response) => {
 
     function customDateChanged(inputEl) {
       activePreset = null;
-      const parentBar = inputEl.closest('.filter-bar');
-      const startInp = parentBar.querySelector('.startDateInput');
-      const endInp = parentBar.querySelector('.endDateInput');
+      var parentBar = inputEl.closest('.filter-bar');
+      var startInp = parentBar.querySelector('.startDateInput');
+      var endInp = parentBar.querySelector('.endDateInput');
 
       currentStartDate = startInp.value || null;
       currentEndDate = endInp.value || null;
@@ -2572,15 +2581,15 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     async function triggerSync() {
-      const btn = document.getElementById('syncBtn');
+      var btn = document.getElementById('syncBtn');
       btn.innerText = 'Syncing...';
       btn.disabled = true;
 
       try {
-        const res = await fetch('/api/sync', { method: 'POST' });
-        const data = await res.json();
-        const isSuccess = data.success !== false;
-        const msg = data.message || (isSuccess ? 'WHOOP activities synchronized successfully!' : 'Sync failed');
+        var res = await fetch('/api/sync', { method: 'POST' });
+        var data = await res.json();
+        var isSuccess = data.success !== false;
+        var msg = data.message || (isSuccess ? 'WHOOP activities synchronized successfully!' : 'Sync failed');
         
         showToastNotification(msg, isSuccess ? 'success' : 'error', isSuccess ? 'Sync Complete' : 'Sync Notice');
         loadRuns();
@@ -2728,7 +2737,6 @@ app.get('/api/settings', async (req: Request, res: Response) => {
   const supabase = getSupabaseClient();
 
   if (useSupabase && supabase) {
-    // 1. Try dedicated user_settings table
     try {
       const { data, error } = await supabase.from('user_settings').select('*').eq('id', 'default').maybeSingle();
       if (!error && data) {
@@ -2742,7 +2750,6 @@ app.get('/api/settings', async (req: Request, res: Response) => {
       }
     } catch (err) {}
 
-    // 2. Fallback to whoop_tokens table with user_id = 'app_settings'
     try {
       const { data, error } = await supabase.from('whoop_tokens').select('*').eq('user_id', 'app_settings').maybeSingle();
       if (!error && data && data.access_token) {
@@ -2758,7 +2765,6 @@ app.get('/api/settings', async (req: Request, res: Response) => {
     } catch (err) {}
   }
 
-  // SQLite fallback
   try {
     const db = await getDb();
     const row = await db.get("SELECT * FROM user_settings WHERE id = 'default'");
@@ -2799,7 +2805,6 @@ app.post('/api/settings', async (req: Request, res: Response) => {
   if (useSupabase && supabase) {
     let savedInSupabase = false;
 
-    // 1. Try upserting to user_settings table
     try {
       const { error } = await supabase.from('user_settings').upsert({
         id: 'default',
@@ -2813,7 +2818,6 @@ app.post('/api/settings', async (req: Request, res: Response) => {
       if (!error) savedInSupabase = true;
     } catch (err) {}
 
-    // 2. Always write to whoop_tokens with user_id = 'app_settings' as guaranteed fallback
     try {
       const { error } = await supabase.from('whoop_tokens').upsert({
         user_id: 'app_settings',
@@ -2832,7 +2836,6 @@ app.post('/api/settings', async (req: Request, res: Response) => {
     }
   }
 
-  // SQLite fallback
   try {
     const db = await getDb();
     await db.run(`
