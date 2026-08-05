@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import axios from 'axios';
+import nodemailer from 'nodemailer';
 import { getAuthorizationUrl, exchangeCodeForToken } from './whoop/auth.js';
 import { syncWhoopWorkouts } from './whoop/sync.js';
 import { getDb } from './db/index.js';
@@ -1448,13 +1449,13 @@ app.get('/', async (req: Request, res: Response) => {
           </div>
 
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap;">
-            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">Direct WhatsApp Contact (Optional):</label>
-            <input type="tel" id="whatsappPhoneInput" class="settings-input" placeholder="e.g. 919876543210 (with country code)" style="width: 260px; font-size: 0.82rem; padding: 5px 10px;" />
+            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">Recipient Email:</label>
+            <input type="email" id="reportEmailInput" class="settings-input" value="manishreddynakkala@gmail.com" style="width: 290px; font-size: 0.85rem; padding: 6px 12px; font-weight: 700;" />
           </div>
 
           <div class="summary-card-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button onclick="shareOnWhatsApp()" class="strava-btn" style="background-color: #25D366; color: white;" id="whatsappShareBtn">
-              Share on WhatsApp
+            <button onclick="sendEmailReport()" class="strava-btn" style="background-color: #0080ff; color: white;" id="sendEmailBtn">
+              Send Email Report
             </button>
             <button onclick="downloadSummaryCardImage()" class="strava-btn strava-btn-primary" id="downloadCardBtn">
               Download Card Image (PNG)
@@ -2401,9 +2402,17 @@ app.get('/', async (req: Request, res: Response) => {
       } catch (e) {}
     }
 
-    function shareOnWhatsApp() {
-      var btn = document.getElementById('whatsappShareBtn');
-      btn.innerText = 'Preparing...';
+    async function sendEmailReport() {
+      var btn = document.getElementById('sendEmailBtn');
+      var emailInp = document.getElementById('reportEmailInput');
+      var targetEmail = emailInp ? emailInp.value.trim() : 'manishreddynakkala@gmail.com';
+
+      if (!targetEmail) {
+        showToastNotification('Please enter a valid recipient email address.', 'error', 'Validation Error');
+        return;
+      }
+
+      btn.innerText = 'Sending Email...';
       btn.disabled = true;
 
       try {
@@ -2412,24 +2421,17 @@ app.get('/', async (req: Request, res: Response) => {
         var pace = document.getElementById('sumValPace').innerText;
         var strain = document.getElementById('sumValStrain').innerText;
 
-        var phoneInp = document.getElementById('whatsappPhoneInput');
-        var targetPhone = phoneInp ? phoneInp.value.replace(/[^0-9]/g, '') : '';
-        
-        var text = '*Weekly Running Performance Summary*\\n' +
+        var text = 'Weekly Running Performance Summary\\n' +
           'Date: ' + new Date().toLocaleDateString() + '\\n' +
           'Total Distance: ' + dist + '\\n' +
           'Sessions: ' + runs + ' runs\\n' +
           'Avg Pace: ' + pace + '\\n' +
           'Avg WHOOP Strain: ' + strain + '\\n';
         if (upcomingRaceSetting && upcomingRaceSetting.name) {
-          var raceDistStrWa = upcomingRaceSetting.distance ? ' (' + Number(upcomingRaceSetting.distance).toFixed(1) + ' km)' : '';
-          text += 'Upcoming Race: ' + upcomingRaceSetting.name + raceDistStrWa + ' on ' + (upcomingRaceSetting.date || '') + '\\n';
+          var raceDistStrText = upcomingRaceSetting.distance ? ' (' + Number(upcomingRaceSetting.distance).toFixed(1) + ' km)' : '';
+          text += 'Upcoming Race: ' + upcomingRaceSetting.name + raceDistStrText + ' on ' + (upcomingRaceSetting.date || '') + '\\n';
         }
         text += '\\nTracked with WHOOP Telemetry & Run Tracker';
-
-        var whatsappUrl = targetPhone && targetPhone.length >= 7 
-          ? ('https://wa.me/' + targetPhone + '?text=' + encodeURIComponent(text))
-          : ('https://api.whatsapp.com/send?text=' + encodeURIComponent(text));
 
         var canvas = document.createElement('canvas');
         canvas.width = 800;
@@ -2528,51 +2530,36 @@ app.get('/', async (req: Request, res: Response) => {
         ctx.font = '500 12px "Plus Jakarta Sans", sans-serif';
         ctx.fillText('Generated on ' + new Date().toLocaleDateString(), 40, 375);
 
-        canvas.toBlob(async function(blob) {
-          if (!blob) {
-            window.open(whatsappUrl, '_blank');
-            btn.innerText = 'Share on WhatsApp';
-            btn.disabled = false;
-            return;
-          }
+        var imageBase64 = canvas.toDataURL('image/png');
 
-          var file = new File([blob], 'Weekly_Running_Report.png', { type: 'image/png' });
+        var res = await fetch('/api/send-email-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: targetEmail,
+            summaryText: text,
+            imageBase64: imageBase64
+          })
+        });
 
-          if (targetPhone && targetPhone.length >= 7) {
-            var link = document.createElement('a');
-            link.download = 'Weekly_Running_Report.png';
-            link.href = URL.createObjectURL(blob);
-            link.click();
-            window.open(whatsappUrl, '_blank');
-            showToastNotification('PNG downloaded! Opening direct chat with +' + targetPhone, 'success', 'Direct WhatsApp');
-          } else if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
-              await navigator.share({
-                title: 'Weekly Running Performance Report',
-                text: text,
-                files: [file]
-              });
-              showToastNotification('Report Card PNG image and text shared to WhatsApp!', 'success', 'WhatsApp Share');
-            } catch (shareErr) {
-              if (shareErr.name !== 'AbortError') {
-                window.open(whatsappUrl, '_blank');
-              }
-            }
-          } else {
-            var link = document.createElement('a');
-            link.download = 'Weekly_Running_Report.png';
-            link.href = URL.createObjectURL(blob);
-            link.click();
-            window.open(whatsappUrl, '_blank');
-            showToastNotification('Report PNG downloaded! Select WhatsApp to send image + caption.', 'success', 'Image Downloaded');
-          }
-          btn.innerText = 'Share on WhatsApp';
-          btn.disabled = false;
-        }, 'image/png');
-
-      } catch (e) {
-        showToastNotification('Could not launch WhatsApp share: ' + e.message, 'error', 'Share Failed');
-        btn.innerText = 'Share on WhatsApp';
+        var data = await res.json();
+        if (data.success) {
+          showToastNotification('Weekly Running Report emailed to ' + targetEmail + '!', 'success', 'Email Sent');
+        } else {
+          var mailSubject = encodeURIComponent('Weekly Running Performance Report - ' + new Date().toLocaleDateString());
+          var mailBody = encodeURIComponent(text);
+          window.open('mailto:' + targetEmail + '?subject=' + mailSubject + '&body=' + mailBody, '_blank');
+          
+          var link = document.createElement('a');
+          link.download = 'Weekly_Running_Report.png';
+          link.href = imageBase64;
+          link.click();
+          showToastNotification('PNG downloaded & email client opened for ' + targetEmail, 'success', 'Report Exported');
+        }
+      } catch (err) {
+        showToastNotification('Error preparing email report: ' + err.message, 'error', 'Email Error');
+      } finally {
+        btn.innerText = 'Send Email Report';
         btn.disabled = false;
       }
     }
@@ -3410,6 +3397,89 @@ app.post('/api/insights', async (req: Request, res: Response) => {
   }
 
   res.json({ insight: trendText, source: 'analytical' });
+});
+
+// Email Report API Endpoint (Sends PNG Image + Text Summary to recipient)
+app.post('/api/send-email-report', async (req: Request, res: Response) => {
+  const { email, summaryText, imageBase64 } = req.body;
+  const targetEmail = email || 'manishreddynakkala@gmail.com';
+
+  if (!summaryText) {
+    return res.status(400).json({ success: false, message: 'Summary text missing' });
+  }
+
+  try {
+    let transporter: nodemailer.Transporter;
+
+    if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+      transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT) || 587,
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        }
+      });
+    } else {
+      const testAccount = await nodemailer.createTestAccount();
+      transporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass
+        }
+      });
+    }
+
+    const attachments: any[] = [];
+    if (imageBase64 && imageBase64.includes('base64,')) {
+      const base64Data = imageBase64.split('base64,')[1];
+      attachments.push({
+        filename: `Weekly_Running_Report_${new Date().toISOString().split('T')[0]}.png`,
+        content: Buffer.from(base64Data, 'base64'),
+        cid: 'report_card_image'
+      });
+    }
+
+    const cleanSummaryHtml = summaryText.replace(/\\n/g, '<br/>');
+
+    const formattedHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <h2 style="color: #0080ff; margin-bottom: 4px;">🏃‍♂️ Weekly Running Performance Summary</h2>
+        <p style="font-size: 14px; color: #64748b; margin-top: 0;">Generated on ${new Date().toLocaleDateString()}</p>
+        
+        ${attachments.length > 0 ? '<div style="margin: 20px 0; text-align: center;"><img src="cid:report_card_image" alt="Weekly Running Report Card" style="max-width: 100%; border-radius: 10px; border: 1px solid #e2e8f0;" /></div>' : ''}
+        
+        <div style="background-color: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 15px; color: #1e293b; line-height: 1.6;">
+          ${cleanSummaryHtml}
+        </div>
+        
+        <p style="font-size: 12px; color: #94a3b8; margin-top: 20px; text-align: center;">Powered by Run Tracker & WHOOP Telemetry</p>
+      </div>
+    `;
+
+    const info = await transporter.sendMail({
+      from: '"Run Tracker" <noreply@whoop-run-tracker.app>',
+      to: targetEmail,
+      subject: `Weekly Running Performance Report - ${new Date().toLocaleDateString()}`,
+      text: summaryText.replace(/\\n/g, '\n'),
+      html: formattedHtml,
+      attachments: attachments
+    });
+
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    if (previewUrl) {
+      console.log('Ethereal test email preview URL:', previewUrl);
+    }
+
+    res.json({ success: true, message: `Email sent to ${targetEmail}`, previewUrl });
+  } catch (err: any) {
+    console.error('Failed to send email:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Settings API GET Endpoint (Bulletproof Cross-device Sync)
