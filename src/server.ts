@@ -2412,7 +2412,7 @@ app.get('/', async (req: Request, res: Response) => {
         return;
       }
 
-      btn.innerText = 'Sending Email...';
+      btn.innerText = 'Preparing Report...';
       btn.disabled = true;
 
       try {
@@ -2532,32 +2532,38 @@ app.get('/', async (req: Request, res: Response) => {
 
         var imageBase64 = canvas.toDataURL('image/png');
 
-        var res = await fetch('/api/send-email-report', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: targetEmail,
-            summaryText: text,
-            imageBase64: imageBase64
-          })
-        });
+        // Always download PNG image card directly so user has image file ready
+        var link = document.createElement('a');
+        link.download = 'Weekly_Running_Report_' + new Date().toISOString().split('T')[0] + '.png';
+        link.href = imageBase64;
+        link.click();
 
-        var data = await res.json();
-        if (data.success) {
-          showToastNotification('Weekly Running Report emailed to ' + targetEmail + '!', 'success', 'Email Sent');
-        } else {
-          var mailSubject = encodeURIComponent('Weekly Running Performance Report - ' + new Date().toLocaleDateString());
-          var mailBody = encodeURIComponent(text);
-          window.open('mailto:' + targetEmail + '?subject=' + mailSubject + '&body=' + mailBody, '_blank');
-          
-          var link = document.createElement('a');
-          link.download = 'Weekly_Running_Report.png';
-          link.href = imageBase64;
-          link.click();
-          showToastNotification('PNG downloaded & email client opened for ' + targetEmail, 'success', 'Report Exported');
-        }
+        try {
+          var res = await fetch('/api/send-email-report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: targetEmail,
+              summaryText: text,
+              imageBase64: imageBase64
+            })
+          });
+
+          var data = await res.json();
+          if (data && data.success) {
+            showToastNotification('Weekly Running Report emailed to ' + targetEmail + '!', 'success', 'Email Sent');
+            return;
+          }
+        } catch (apiErr) {}
+
+        // Direct Email Client Fallback Launcher (Launches Gmail / Mail App prefilled to targetEmail)
+        var mailSubject = encodeURIComponent('Weekly Running Performance Report - ' + new Date().toLocaleDateString());
+        var mailBody = encodeURIComponent(text + '\\n\\n(PNG Report Card downloaded to your downloads folder — attach to email!)');
+        window.open('mailto:' + targetEmail + '?subject=' + mailSubject + '&body=' + mailBody, '_blank');
+        showToastNotification('PNG Report downloaded! Email draft opened for ' + targetEmail, 'success', 'Report Exported');
+
       } catch (err) {
-        showToastNotification('Error preparing email report: ' + err.message, 'error', 'Email Error');
+        showToastNotification('Error preparing report: ' + err.message, 'error', 'Export Error');
       } finally {
         btn.innerText = 'Send Email Report';
         btn.disabled = false;
@@ -3409,30 +3415,19 @@ app.post('/api/send-email-report', async (req: Request, res: Response) => {
   }
 
   try {
-    let transporter: nodemailer.Transporter;
-
-    if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-      transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
-        }
-      });
-    } else {
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass
-        }
-      });
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
+      return res.json({ success: false, fallback: true, message: 'Server SMTP credentials not configured. Using direct mail client fallback.' });
     }
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
 
     const attachments: any[] = [];
     if (imageBase64 && imageBase64.includes('base64,')) {
@@ -3461,7 +3456,7 @@ app.post('/api/send-email-report', async (req: Request, res: Response) => {
       </div>
     `;
 
-    const info = await transporter.sendMail({
+    await transporter.sendMail({
       from: '"Run Tracker" <noreply@whoop-run-tracker.app>',
       to: targetEmail,
       subject: `Weekly Running Performance Report - ${new Date().toLocaleDateString()}`,
@@ -3470,15 +3465,10 @@ app.post('/api/send-email-report', async (req: Request, res: Response) => {
       attachments: attachments
     });
 
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    if (previewUrl) {
-      console.log('Ethereal test email preview URL:', previewUrl);
-    }
-
-    res.json({ success: true, message: `Email sent to ${targetEmail}`, previewUrl });
+    res.json({ success: true, message: `Email sent to ${targetEmail}` });
   } catch (err: any) {
-    console.error('Failed to send email:', err);
-    res.status(500).json({ success: false, error: err.message });
+    console.error('Failed to send email via SMTP:', err);
+    res.json({ success: false, fallback: true, error: err.message });
   }
 });
 
