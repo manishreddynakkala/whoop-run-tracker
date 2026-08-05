@@ -2232,7 +2232,8 @@ app.get('/', async (req: Request, res: Response) => {
 
         var subtext = 'Completed ' + runs.length + ' workout sessions logging ' + totalDist.toFixed(2) + ' km.';
         if (upcomingRaceSetting && upcomingRaceSetting.name) {
-          subtext += ' Target Event: ' + upcomingRaceSetting.name + '.';
+          var raceDistStr = upcomingRaceSetting.distance ? ' (' + Number(upcomingRaceSetting.distance).toFixed(1) + ' km)' : '';
+          subtext += ' Upcoming Race: ' + upcomingRaceSetting.name + raceDistStr + '.';
         }
         document.getElementById('summaryCardSubtext').innerText = subtext;
       } catch (e) {}
@@ -2344,9 +2345,10 @@ app.get('/', async (req: Request, res: Response) => {
         ctx.fillText(subtext, 40, 310);
 
         if (upcomingRaceSetting && upcomingRaceSetting.name) {
+          var raceDistStrCanvas = upcomingRaceSetting.distance ? ' (' + Number(upcomingRaceSetting.distance).toFixed(1) + ' km)' : '';
           ctx.fillStyle = '#fc4c02';
           ctx.font = '800 14px "Plus Jakarta Sans", sans-serif';
-          ctx.fillText('Target Race: ' + upcomingRaceSetting.name + ' (' + (upcomingRaceSetting.date || '') + ')', 40, 340);
+          ctx.fillText('Upcoming Race: ' + upcomingRaceSetting.name + raceDistStrCanvas + ' on ' + (upcomingRaceSetting.date || ''), 40, 340);
         }
 
         ctx.fillStyle = '#94a3b8';
@@ -2381,7 +2383,8 @@ app.get('/', async (req: Request, res: Response) => {
           'Avg Pace: ' + pace + '\\n' +
           'Avg WHOOP Strain: ' + strain + '\\n';
         if (upcomingRaceSetting && upcomingRaceSetting.name) {
-          text += 'Target Race: ' + upcomingRaceSetting.name + ' (' + (upcomingRaceSetting.date || '') + ')\\n';
+          var raceDistStrText = upcomingRaceSetting.distance ? ' (' + Number(upcomingRaceSetting.distance).toFixed(1) + ' km)' : '';
+          text += 'Upcoming Race: ' + upcomingRaceSetting.name + raceDistStrText + ' on ' + (upcomingRaceSetting.date || '') + '\\n';
         }
         text += 'Powered by Run Tracker & WHOOP Telemetry';
 
@@ -2394,6 +2397,10 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     function shareOnWhatsApp() {
+      var btn = document.getElementById('whatsappShareBtn');
+      btn.innerText = 'Preparing...';
+      btn.disabled = true;
+
       try {
         var dist = document.getElementById('sumValDistance').innerText;
         var runs = document.getElementById('sumValRuns').innerText;
@@ -2407,16 +2414,147 @@ app.get('/', async (req: Request, res: Response) => {
           'Avg Pace: ' + pace + '\\n' +
           'Avg WHOOP Strain: ' + strain + '\\n';
         if (upcomingRaceSetting && upcomingRaceSetting.name) {
-          text += 'Target Race: ' + upcomingRaceSetting.name + ' (' + (upcomingRaceSetting.date || '') + ')\\n';
+          var raceDistStrWa = upcomingRaceSetting.distance ? ' (' + Number(upcomingRaceSetting.distance).toFixed(1) + ' km)' : '';
+          text += 'Upcoming Race: ' + upcomingRaceSetting.name + raceDistStrWa + ' on ' + (upcomingRaceSetting.date || '') + '\\n';
         }
         text += '\\nTracked with WHOOP Telemetry & Run Tracker';
 
-        var encodedText = encodeURIComponent(text);
-        var whatsappUrl = 'https://api.whatsapp.com/send?text=' + encodedText;
-        window.open(whatsappUrl, '_blank');
-        showToastNotification('Opening WhatsApp to share report!', 'success', 'WhatsApp Share');
+        var canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 420;
+        var ctx = canvas.getContext('2d');
+
+        var grad = ctx.createLinearGradient(0, 0, 800, 420);
+        var isDark = document.body.classList.contains('dark-mode');
+        if (isDark) {
+          grad.addColorStop(0, '#0f172a');
+          grad.addColorStop(1, '#020617');
+        } else {
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(1, '#f8fafc');
+        }
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 800, 420);
+
+        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.15)' : '#e2e8f0';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(10, 10, 780, 400);
+
+        ctx.fillStyle = '#0080ff';
+        ctx.beginPath();
+        ctx.roundRect(40, 40, 44, 44, 10);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 24px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('R', 54, 71);
+
+        ctx.fillStyle = isDark ? '#f8fafc' : '#1e293b';
+        ctx.font = '800 22px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('Weekly Performance Snapshot', 96, 62);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '600 14px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('Run Tracker & WHOOP Telemetry Report', 96, 82);
+
+        ctx.fillStyle = '#fc4c02';
+        ctx.beginPath();
+        ctx.roundRect(620, 45, 140, 32, 16);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 12px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('RUN TRACKER', 645, 66);
+
+        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(40, 110);
+        ctx.lineTo(760, 110);
+        ctx.stroke();
+
+        var metrics = [
+          { val: dist, lbl: 'TOTAL DISTANCE' },
+          { val: runs, lbl: 'RUN SESSIONS' },
+          { val: pace, lbl: 'AVG PACE' },
+          { val: strain, lbl: 'AVG STRAIN' }
+        ];
+
+        metrics.forEach(function(m, idx) {
+          var x = 40 + (idx * 182);
+          ctx.fillStyle = isDark ? 'rgba(255,255,255,0.05)' : '#ffffff';
+          ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(x, 135, 168, 120, 12);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#0080ff';
+          ctx.font = '800 24px "Plus Jakarta Sans", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(m.val, x + 84, 190);
+
+          ctx.fillStyle = '#64748b';
+          ctx.font = '700 11px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText(m.lbl, x + 84, 220);
+        });
+
+        ctx.textAlign = 'left';
+        ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
+        ctx.font = '600 14px "Plus Jakarta Sans", sans-serif';
+        var subtext = document.getElementById('summaryCardSubtext').innerText;
+        ctx.fillText(subtext, 40, 310);
+
+        if (upcomingRaceSetting && upcomingRaceSetting.name) {
+          var raceDistStrCanvas = upcomingRaceSetting.distance ? ' (' + Number(upcomingRaceSetting.distance).toFixed(1) + ' km)' : '';
+          ctx.fillStyle = '#fc4c02';
+          ctx.font = '800 14px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText('Upcoming Race: ' + upcomingRaceSetting.name + raceDistStrCanvas + ' on ' + (upcomingRaceSetting.date || ''), 40, 340);
+        }
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '500 12px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('Generated on ' + new Date().toLocaleDateString(), 40, 375);
+
+        canvas.toBlob(async function(blob) {
+          if (!blob) {
+            window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+            btn.innerText = 'Share on WhatsApp';
+            btn.disabled = false;
+            return;
+          }
+
+          var file = new File([blob], 'Weekly_Running_Report.png', { type: 'image/png' });
+
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                title: 'Weekly Running Performance Report',
+                text: text,
+                files: [file]
+              });
+              showToastNotification('Report Card PNG image and text shared to WhatsApp!', 'success', 'WhatsApp Share');
+            } catch (shareErr) {
+              if (shareErr.name !== 'AbortError') {
+                window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+              }
+            }
+          } else {
+            var link = document.createElement('a');
+            link.download = 'Weekly_Running_Report.png';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+            showToastNotification('Report PNG downloaded! Select WhatsApp to send image + caption.', 'success', 'Image Downloaded');
+          }
+          btn.innerText = 'Share on WhatsApp';
+          btn.disabled = false;
+        }, 'image/png');
+
       } catch (e) {
-        showToastNotification('Could not launch WhatsApp: ' + e.message, 'error', 'Share Failed');
+        showToastNotification('Could not launch WhatsApp share: ' + e.message, 'error', 'Share Failed');
+        btn.innerText = 'Share on WhatsApp';
+        btn.disabled = false;
       }
     }
 
