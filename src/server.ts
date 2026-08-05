@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import axios from 'axios';
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { getAuthorizationUrl, exchangeCodeForToken } from './whoop/auth.js';
 import { syncWhoopWorkouts } from './whoop/sync.js';
 import { getDb } from './db/index.js';
@@ -2532,38 +2533,25 @@ app.get('/', async (req: Request, res: Response) => {
 
         var imageBase64 = canvas.toDataURL('image/png');
 
-        // Always download PNG image card directly so user has image file ready
-        var link = document.createElement('a');
-        link.download = 'Weekly_Running_Report_' + new Date().toISOString().split('T')[0] + '.png';
-        link.href = imageBase64;
-        link.click();
+        var res = await fetch('/api/send-email-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: targetEmail,
+            summaryText: text,
+            imageBase64: imageBase64
+          })
+        });
 
-        try {
-          var res = await fetch('/api/send-email-report', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: targetEmail,
-              summaryText: text,
-              imageBase64: imageBase64
-            })
-          });
-
-          var data = await res.json();
-          if (data && data.success) {
-            showToastNotification('Weekly Running Report emailed to ' + targetEmail + '!', 'success', 'Email Sent');
-            return;
-          }
-        } catch (apiErr) {}
-
-        // Direct Email Client Fallback Launcher (Launches Gmail / Mail App prefilled to targetEmail)
-        var mailSubject = encodeURIComponent('Weekly Running Performance Report - ' + new Date().toLocaleDateString());
-        var mailBody = encodeURIComponent(text + '\\n\\n(PNG Report Card downloaded to your downloads folder — attach to email!)');
-        window.open('mailto:' + targetEmail + '?subject=' + mailSubject + '&body=' + mailBody, '_blank');
-        showToastNotification('PNG Report downloaded! Email draft opened for ' + targetEmail, 'success', 'Report Exported');
+        var data = await res.json();
+        if (data && data.success) {
+          showToastNotification('Weekly Running Report emailed directly to ' + targetEmail + '!', 'success', 'Email Delivered');
+        } else {
+          showToastNotification('Failed to send email: ' + (data.message || data.error || 'API Error'), 'error', 'Delivery Failed');
+        }
 
       } catch (err) {
-        showToastNotification('Error preparing report: ' + err.message, 'error', 'Export Error');
+        showToastNotification('Error preparing email report: ' + err.message, 'error', 'Export Error');
       } finally {
         btn.innerText = 'Send Email Report';
         btn.disabled = false;
@@ -3405,7 +3393,7 @@ app.post('/api/insights', async (req: Request, res: Response) => {
   res.json({ insight: trendText, source: 'analytical' });
 });
 
-// Email Report API Endpoint (Sends PNG Image + Text Summary to recipient)
+// Email Report API Endpoint (Sends PNG Image + Text Summary via Resend API)
 app.post('/api/send-email-report', async (req: Request, res: Response) => {
   const { email, summaryText, imageBase64 } = req.body;
   const targetEmail = email || 'manishreddynakkala@gmail.com';
@@ -3415,19 +3403,8 @@ app.post('/api/send-email-report', async (req: Request, res: Response) => {
   }
 
   try {
-    if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
-      return res.json({ success: false, fallback: true, message: 'Server SMTP credentials not configured. Using direct mail client fallback.' });
-    }
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
+    const resendApiKey = process.env.RESEND_API_KEY || '';
+    const resend = new Resend(resendApiKey);
 
     const attachments: any[] = [];
     if (imageBase64 && imageBase64.includes('base64,')) {
@@ -3435,40 +3412,52 @@ app.post('/api/send-email-report', async (req: Request, res: Response) => {
       attachments.push({
         filename: `Weekly_Running_Report_${new Date().toISOString().split('T')[0]}.png`,
         content: Buffer.from(base64Data, 'base64'),
-        cid: 'report_card_image'
       });
     }
 
     const cleanSummaryHtml = summaryText.replace(/\\n/g, '<br/>');
 
     const formattedHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-        <h2 style="color: #0080ff; margin-bottom: 4px;">🏃‍♂️ Weekly Running Performance Summary</h2>
-        <p style="font-size: 14px; color: #64748b; margin-top: 0;">Generated on ${new Date().toLocaleDateString()}</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+        <div style="border-bottom: 2px solid #0080ff; padding-bottom: 12px; margin-bottom: 20px;">
+          <h2 style="color: #0080ff; margin: 0; font-size: 20px; font-weight: 800;">🏃‍♂️ Weekly Running Performance Summary</h2>
+        </div>
+        <p style="font-size: 13px; color: #64748b; margin-top: 0;">Generated on ${new Date().toLocaleDateString()}</p>
         
-        ${attachments.length > 0 ? '<div style="margin: 20px 0; text-align: center;"><img src="cid:report_card_image" alt="Weekly Running Report Card" style="max-width: 100%; border-radius: 10px; border: 1px solid #e2e8f0;" /></div>' : ''}
-        
-        <div style="background-color: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 15px; color: #1e293b; line-height: 1.6;">
+        <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 15px; color: #1e293b; line-height: 1.65; margin-bottom: 20px;">
           ${cleanSummaryHtml}
         </div>
         
-        <p style="font-size: 12px; color: #94a3b8; margin-top: 20px; text-align: center;">Powered by Run Tracker & WHOOP Telemetry</p>
+        ${imageBase64 ? `
+          <div style="margin: 20px 0; text-align: center;">
+            <p style="font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 8px;">Weekly Report Card Snapshot:</p>
+            <img src="${imageBase64}" alt="Weekly Running Report Card" style="max-width: 100%; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.08);" />
+          </div>
+        ` : ''}
+        
+        <p style="font-size: 12px; color: #94a3b8; margin-top: 24px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+          Powered by Run Tracker & WHOOP Telemetry
+        </p>
       </div>
     `;
 
-    await transporter.sendMail({
-      from: '"Run Tracker" <noreply@whoop-run-tracker.app>',
-      to: targetEmail,
-      subject: `Weekly Running Performance Report - ${new Date().toLocaleDateString()}`,
-      text: summaryText.replace(/\\n/g, '\n'),
+    const sendResult = await resend.emails.send({
+      from: 'Run Tracker <onboarding@resend.dev>',
+      to: [targetEmail],
+      subject: `🏃‍♂️ Weekly Running Performance Report - ${new Date().toLocaleDateString()}`,
       html: formattedHtml,
       attachments: attachments
     });
 
-    res.json({ success: true, message: `Email sent to ${targetEmail}` });
+    if (sendResult.error) {
+      console.error('Resend API error:', sendResult.error);
+      return res.status(500).json({ success: false, message: sendResult.error.message });
+    }
+
+    res.json({ success: true, message: `Email sent to ${targetEmail}`, id: sendResult.data?.id });
   } catch (err: any) {
-    console.error('Failed to send email via SMTP:', err);
-    res.json({ success: false, fallback: true, error: err.message });
+    console.error('Failed to send email via Resend API:', err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
