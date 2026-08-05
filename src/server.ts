@@ -1409,7 +1409,7 @@ app.get('/', async (req: Request, res: Response) => {
       <!-- 6. Weekly Summary Card (Export / Share) Component Positioned Towards End of Overview Section -->
       <div class="summary-export-section" style="margin-top: 2rem; margin-bottom: 3rem;">
         <div class="section-header" style="margin-bottom: 0.8rem;">
-          <div class="section-title" style="font-size: 1.05rem;">📸 Weekly Running Performance Report Card</div>
+          <div class="section-title" style="font-size: 1.05rem;">Weekly Running Performance Report Card</div>
         </div>
         
         <div class="summary-card-exportable" id="weeklySummaryCard">
@@ -1448,6 +1448,9 @@ app.get('/', async (req: Request, res: Response) => {
           </div>
 
           <div class="summary-card-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="shareOnWhatsApp()" class="strava-btn" style="background-color: #25D366; color: white;" id="whatsappShareBtn">
+              Share on WhatsApp
+            </button>
             <button onclick="downloadSummaryCardImage()" class="strava-btn strava-btn-primary" id="downloadCardBtn">
               Download Card Image (PNG)
             </button>
@@ -2388,6 +2391,33 @@ app.get('/', async (req: Request, res: Response) => {
           showToastNotification('Could not copy text: ' + err.message, 'error', 'Copy Failed');
         });
       } catch (e) {}
+    }
+
+    function shareOnWhatsApp() {
+      try {
+        var dist = document.getElementById('sumValDistance').innerText;
+        var runs = document.getElementById('sumValRuns').innerText;
+        var pace = document.getElementById('sumValPace').innerText;
+        var strain = document.getElementById('sumValStrain').innerText;
+        
+        var text = '*Weekly Running Performance Summary*\\n' +
+          'Date: ' + new Date().toLocaleDateString() + '\\n' +
+          'Total Distance: ' + dist + '\\n' +
+          'Sessions: ' + runs + ' runs\\n' +
+          'Avg Pace: ' + pace + '\\n' +
+          'Avg WHOOP Strain: ' + strain + '\\n';
+        if (upcomingRaceSetting && upcomingRaceSetting.name) {
+          text += 'Target Race: ' + upcomingRaceSetting.name + ' (' + (upcomingRaceSetting.date || '') + ')\\n';
+        }
+        text += '\\nTracked with WHOOP Telemetry & Run Tracker';
+
+        var encodedText = encodeURIComponent(text);
+        var whatsappUrl = 'https://api.whatsapp.com/send?text=' + encodedText;
+        window.open(whatsappUrl, '_blank');
+        showToastNotification('Opening WhatsApp to share report!', 'success', 'WhatsApp Share');
+      } catch (e) {
+        showToastNotification('Could not launch WhatsApp: ' + e.message, 'error', 'Share Failed');
+      }
     }
 
     function calculatePRsAndGoals(allRuns) {
