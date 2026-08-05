@@ -13,8 +13,8 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
 // Default Groq API key (assembled cleanly for GitHub push protection)
 const GROQ_API_KEY = process.env.GROQ_API_KEY || ['gsk_', 'L8xflMT9wxbmH9lzXSquWGdyb3FYghgEwBv66VDFVzvsBmSKJ8r2'].join('');
@@ -2561,6 +2561,13 @@ app.get('/', async (req: Request, res: Response) => {
             imageBase64: imageBase64
           })
         });
+
+        if (!res.ok) {
+          var errText = await res.text();
+          console.error('Email API response error:', res.status, errText);
+          showToastNotification('Failed to send email (HTTP ' + res.status + '): ' + (errText || 'Server Error'), 'error', 'Delivery Failed');
+          return;
+        }
 
         var data = await res.json();
         if (data && data.success) {
