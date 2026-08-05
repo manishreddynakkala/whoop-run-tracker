@@ -955,6 +955,108 @@ app.get('/', async (req: Request, res: Response) => {
       border: 1px solid var(--badge-border);
     }
 
+    /* In-Page Theme-Matched Notification Toast Pop-Up Container */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+      max-width: 380px;
+      width: calc(100vw - 32px);
+    }
+
+    .toast-popup {
+      pointer-events: auto;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-dark);
+      border-left: 4px solid var(--theme-blue);
+      padding: 14px 16px;
+      border-radius: 12px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      opacity: 0;
+      transform: translateY(20px) scale(0.96);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(8px);
+    }
+
+    .toast-popup.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .toast-popup.success {
+      border-left-color: #10b981;
+    }
+
+    .toast-popup.error {
+      border-left-color: #ef4444;
+    }
+
+    .toast-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .toast-popup.success .toast-icon {
+      background: #10b981;
+      color: white;
+    }
+
+    .toast-popup.error .toast-icon {
+      background: #ef4444;
+      color: white;
+    }
+
+    .toast-content {
+      flex: 1;
+    }
+
+    .toast-title {
+      font-weight: 800;
+      font-size: 0.88rem;
+      margin-bottom: 2px;
+      color: var(--text-dark);
+    }
+
+    .toast-message {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .toast-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+      transition: color 0.15s ease;
+    }
+
+    .toast-close-btn:hover {
+      color: var(--text-dark);
+    }
+
     /* Mobile Media Queries (iPhone Portrait Mode Overhaul) */
     @media (max-width: 650px) {
       .top-navbar {
@@ -1029,6 +1131,13 @@ app.get('/', async (req: Request, res: Response) => {
       .goal-footer {
         flex-direction: column;
         gap: 4px;
+      }
+      .toast-container {
+        bottom: 16px;
+        left: 16px;
+        right: 16px;
+        width: auto;
+        max-width: 100%;
       }
     }
   </style>
@@ -1405,6 +1514,9 @@ app.get('/', async (req: Request, res: Response) => {
     </div>
   </div>
 
+  <!-- In-Page Theme-Matched Notification Toast Pop-Up Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
   <script>
     let currentStartDate = null;
     let currentEndDate = null;
@@ -1419,6 +1531,38 @@ app.get('/', async (req: Request, res: Response) => {
     let chartInstanceStrainHr = null;
     let chartInstanceWeeklyMileage = null;
     let modalChartInstance = null;
+
+    // Toast Pop-up Notification System (Matches Theme Aesthetic)
+    function showToastNotification(message, type = 'success', title = '') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = \`toast-popup \${type}\`;
+
+      const iconText = type === 'error' ? '✕' : '✓';
+      const defaultTitle = title || (type === 'error' ? 'Sync Error' : 'Sync Complete');
+
+      toast.innerHTML = \`
+        <div class="toast-icon">\${iconText}</div>
+        <div class="toast-content">
+          <div class="toast-title">\${defaultTitle}</div>
+          <div class="toast-message">\${message}</div>
+        </div>
+        <button class="toast-close-btn" onclick="this.parentElement.remove()">&times;</button>
+      \`;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.add('show');
+      });
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 4500);
+    }
 
     // Dynamically check WHOOP connection status
     async function checkConnectionStatus() {
@@ -1573,7 +1717,7 @@ app.get('/', async (req: Request, res: Response) => {
       const distance = document.getElementById('raceDistInput').value;
 
       if (!name || !date) {
-        alert('Please enter both Race Name and Race Date.');
+        showToastNotification('Please enter both Race Name and Race Date.', 'error', 'Validation Error');
         btn.innerText = 'Save Race';
         btn.disabled = false;
         return;
@@ -1585,7 +1729,7 @@ app.get('/', async (req: Request, res: Response) => {
       await syncSettingsToServer();
       btn.innerText = 'Save Race';
       btn.disabled = false;
-      alert('Upcoming race "' + name + '" saved across all your devices!');
+      showToastNotification('Upcoming race "' + name + '" saved across all your devices!', 'success', 'Race Updated');
     }
 
     function updateRaceCountdownWidget() {
@@ -1678,7 +1822,7 @@ app.get('/', async (req: Request, res: Response) => {
         await syncSettingsToServer();
         btn.innerText = 'Save Goal';
         btn.disabled = false;
-        alert('Monthly Target Goal updated to ' + val + ' km across all devices!');
+        showToastNotification('Monthly Target Goal updated to ' + val + ' km across all devices!', 'success', 'Goal Saved');
         if (allRunsCache.length > 0) {
           calculatePRsAndGoals(allRunsCache);
         }
@@ -2417,10 +2561,13 @@ app.get('/', async (req: Request, res: Response) => {
       try {
         const res = await fetch('/api/sync', { method: 'POST' });
         const data = await res.json();
-        alert(data.message || (data.success ? 'Sync completed successfully!' : 'Sync failed'));
+        const isSuccess = data.success !== false;
+        const msg = data.message || (isSuccess ? 'WHOOP activities synchronized successfully!' : 'Sync failed');
+        
+        showToastNotification(msg, isSuccess ? 'success' : 'error', isSuccess ? 'Sync Complete' : 'Sync Notice');
         loadRuns();
       } catch (err) {
-        alert('Error triggering sync: ' + err.message);
+        showToastNotification('Error triggering WHOOP sync: ' + err.message, 'error', 'Sync Failed');
       } finally {
         btn.innerText = 'Sync Data';
         btn.disabled = false;
