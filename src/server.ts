@@ -2371,14 +2371,14 @@ app.get('/', async (req: Request, res: Response) => {
         var pace = document.getElementById('sumValPace').innerText;
         var strain = document.getElementById('sumValStrain').innerText;
         
-        var text = 'Weekly Running Performance Summary\n' +
-          'Date: ' + new Date().toLocaleDateString() + '\n' +
-          'Total Distance: ' + dist + '\n' +
-          'Sessions: ' + runs + ' runs\n' +
-          'Avg Pace: ' + pace + '\n' +
-          'Avg WHOOP Strain: ' + strain + '\n';
+        var text = 'Weekly Running Performance Summary\\n' +
+          'Date: ' + new Date().toLocaleDateString() + '\\n' +
+          'Total Distance: ' + dist + '\\n' +
+          'Sessions: ' + runs + ' runs\\n' +
+          'Avg Pace: ' + pace + '\\n' +
+          'Avg WHOOP Strain: ' + strain + '\\n';
         if (upcomingRaceSetting && upcomingRaceSetting.name) {
-          text += 'Target Race: ' + upcomingRaceSetting.name + ' (' + (upcomingRaceSetting.date || '') + ')\n';
+          text += 'Target Race: ' + upcomingRaceSetting.name + ' (' + (upcomingRaceSetting.date || '') + ')\\n';
         }
         text += 'Powered by Run Tracker & WHOOP Telemetry';
 
