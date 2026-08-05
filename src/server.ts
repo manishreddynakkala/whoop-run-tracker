@@ -590,11 +590,81 @@ app.get('/', async (req: Request, res: Response) => {
       line-height: 1.55;
     }
 
-    /* Feature 3: Recovery Correlation Card Styles */
+    /* Recovery Correlation Pill Styles */
     .recovery-pill-green {
       background: rgba(16, 185, 129, 0.15);
       color: #10b981;
       border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    /* Weekly Summary Card (Export / Share) Component Styles */
+    .summary-card-exportable {
+      background: linear-gradient(135deg, var(--card-bg) 0%, var(--subtle-bg) 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .summary-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .summary-card-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .summary-card-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-dark);
+    }
+
+    .summary-card-date {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .summary-metrics-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .summary-metric-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 0.85rem;
+      text-align: center;
+    }
+
+    .summary-metric-val {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--theme-blue);
+      line-height: 1.1;
+    }
+
+    .summary-metric-lbl {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
     }
 
     /* Monthly Goal Progress Card */
@@ -1335,6 +1405,58 @@ app.get('/', async (req: Request, res: Response) => {
           <div class="card-subtitle">BPM</div>
         </div>
       </div>
+
+      <!-- 6. Weekly Summary Card (Export / Share) Component Positioned Towards End of Overview Section -->
+      <div class="summary-export-section" style="margin-top: 2rem; margin-bottom: 3rem;">
+        <div class="section-header" style="margin-bottom: 0.8rem;">
+          <div class="section-title" style="font-size: 1.05rem;">📸 Weekly Running Performance Report Card</div>
+        </div>
+        
+        <div class="summary-card-exportable" id="weeklySummaryCard">
+          <div class="summary-card-header">
+            <div class="summary-card-brand">
+              <div class="brand-icon" style="width:30px; height:30px; font-size:0.95rem;">R</div>
+              <div>
+                <div class="summary-card-title">Weekly Performance Snapshot</div>
+                <div class="summary-card-date" id="summaryCardDateRange">Current Week Summary</div>
+              </div>
+            </div>
+            <span class="ai-badge-pill" style="background:var(--theme-orange)">Run Tracker</span>
+          </div>
+
+          <div class="summary-metrics-row">
+            <div class="summary-metric-box">
+              <div class="summary-metric-val" id="sumValDistance">0.00 km</div>
+              <div class="summary-metric-lbl">Total Distance</div>
+            </div>
+            <div class="summary-metric-box">
+              <div class="summary-metric-val" id="sumValRuns">0</div>
+              <div class="summary-metric-lbl">Sessions</div>
+            </div>
+            <div class="summary-metric-box">
+              <div class="summary-metric-val" id="sumValPace">N/A</div>
+              <div class="summary-metric-lbl">Avg Pace</div>
+            </div>
+            <div class="summary-metric-box">
+              <div class="summary-metric-val" id="sumValStrain">0.0</div>
+              <div class="summary-metric-lbl">Avg Strain</div>
+            </div>
+          </div>
+
+          <div style="font-size: 0.83rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.25rem;" id="summaryCardSubtext">
+            Calculated from your logged WHOOP telemetry workouts.
+          </div>
+
+          <div class="summary-card-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="downloadSummaryCardImage()" class="strava-btn strava-btn-primary" id="downloadCardBtn">
+              Download Card Image (PNG)
+            </button>
+            <button onclick="copySummaryCardText()" class="strava-btn strava-btn-secondary" id="copyCardBtn">
+              Copy Text Summary
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- TAB 2: ANALYTICS (GRAPHICAL VISUALS & WHOOP RECOVERY CORRELATION) -->
@@ -2039,6 +2161,8 @@ app.get('/', async (req: Request, res: Response) => {
         var avgHrVal = hrCount > 0 ? Math.round(totalAvgHr / hrCount) : null;
         document.getElementById('kpiAvgHr').innerText = avgHrVal ? avgHrVal + ' / ' + maxHrReached + ' bpm' : 'N/A';
 
+        updateWeeklySummaryReportCard(filteredRuns, totalDistKm, totalPaceDurationMs, totalPaceDistKm, totalStrain, strainCount);
+
         if (!tbody) return;
 
         if (filteredRuns.length === 0) {
@@ -2090,6 +2214,180 @@ app.get('/', async (req: Request, res: Response) => {
           tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: #ef4444">Error loading data: ' + err.message + '</td></tr>';
         }
       }
+    }
+
+    function updateWeeklySummaryReportCard(runs, totalDist, paceMs, paceDist, totalStrain, strainCount) {
+      try {
+        var now = new Date();
+        var dateStr = now.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+        document.getElementById('summaryCardDateRange').innerText = 'Report Generated: ' + dateStr;
+
+        document.getElementById('sumValDistance').innerText = totalDist > 0 ? totalDist.toFixed(2) + ' km' : '0.00 km';
+        document.getElementById('sumValRuns').innerText = runs.length;
+        document.getElementById('sumValPace').innerText = calcPaceString(paceMs, paceDist);
+        document.getElementById('sumValStrain').innerText = strainCount > 0 ? (totalStrain / strainCount).toFixed(1) + ' /21' : 'N/A';
+
+        var subtext = 'Completed ' + runs.length + ' workout sessions logging ' + totalDist.toFixed(2) + ' km.';
+        if (upcomingRaceSetting && upcomingRaceSetting.name) {
+          subtext += ' Target Event: ' + upcomingRaceSetting.name + '.';
+        }
+        document.getElementById('summaryCardSubtext').innerText = subtext;
+      } catch (e) {}
+    }
+
+    // Pure Native Canvas High-Res PNG Generator (100% Reliable, Zero CDN Dependencies)
+    function downloadSummaryCardImage() {
+      var btn = document.getElementById('downloadCardBtn');
+      btn.innerText = 'Generating PNG...';
+      btn.disabled = true;
+
+      try {
+        var canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 420;
+        var ctx = canvas.getContext('2d');
+
+        // Background Gradient
+        var grad = ctx.createLinearGradient(0, 0, 800, 420);
+        var isDark = document.body.classList.contains('dark-mode');
+        if (isDark) {
+          grad.addColorStop(0, '#0f172a');
+          grad.addColorStop(1, '#020617');
+        } else {
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(1, '#f8fafc');
+        }
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 800, 420);
+
+        // Border
+        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.15)' : '#e2e8f0';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(10, 10, 780, 400);
+
+        // Header Brand Icon
+        ctx.fillStyle = '#0080ff';
+        ctx.beginPath();
+        ctx.roundRect(40, 40, 44, 44, 10);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 24px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('R', 54, 71);
+
+        // Header Title
+        ctx.fillStyle = isDark ? '#f8fafc' : '#1e293b';
+        ctx.font = '800 22px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('Weekly Performance Snapshot', 96, 62);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '600 14px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('Run Tracker & WHOOP Telemetry Report', 96, 82);
+
+        // Date Badge
+        ctx.fillStyle = '#fc4c02';
+        ctx.beginPath();
+        ctx.roundRect(620, 45, 140, 32, 16);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 12px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('RUN TRACKER', 645, 66);
+
+        // Divider Line
+        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(40, 110);
+        ctx.lineTo(760, 110);
+        ctx.stroke();
+
+        // 4 Metric Cards Grid
+        var dist = document.getElementById('sumValDistance').innerText;
+        var runs = document.getElementById('sumValRuns').innerText;
+        var pace = document.getElementById('sumValPace').innerText;
+        var strain = document.getElementById('sumValStrain').innerText;
+
+        var metrics = [
+          { val: dist, lbl: 'TOTAL DISTANCE' },
+          { val: runs, lbl: 'RUN SESSIONS' },
+          { val: pace, lbl: 'AVG PACE' },
+          { val: strain, lbl: 'AVG STRAIN' }
+        ];
+
+        metrics.forEach(function(m, idx) {
+          var x = 40 + (idx * 182);
+          ctx.fillStyle = isDark ? 'rgba(255,255,255,0.05)' : '#ffffff';
+          ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(x, 135, 168, 120, 12);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#0080ff';
+          ctx.font = '800 24px "Plus Jakarta Sans", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(m.val, x + 84, 190);
+
+          ctx.fillStyle = '#64748b';
+          ctx.font = '700 11px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText(m.lbl, x + 84, 220);
+        });
+
+        ctx.textAlign = 'left';
+        ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
+        ctx.font = '600 14px "Plus Jakarta Sans", sans-serif';
+        var subtext = document.getElementById('summaryCardSubtext').innerText;
+        ctx.fillText(subtext, 40, 310);
+
+        if (upcomingRaceSetting && upcomingRaceSetting.name) {
+          ctx.fillStyle = '#fc4c02';
+          ctx.font = '800 14px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText('Target Race: ' + upcomingRaceSetting.name + ' (' + (upcomingRaceSetting.date || '') + ')', 40, 340);
+        }
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '500 12px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('Generated on ' + new Date().toLocaleDateString(), 40, 375);
+
+        var image = canvas.toDataURL('image/png');
+        var link = document.createElement('a');
+        link.download = 'Weekly_Running_Report_' + new Date().toISOString().split('T')[0] + '.png';
+        link.href = image;
+        link.click();
+        showToastNotification('Weekly Running Report Card PNG downloaded successfully!', 'success', 'Report Exported');
+      } catch (err) {
+        showToastNotification('Failed to generate card image: ' + err.message, 'error', 'Export Failed');
+      } finally {
+        btn.innerText = 'Download Card Image (PNG)';
+        btn.disabled = false;
+      }
+    }
+
+    function copySummaryCardText() {
+      try {
+        var dist = document.getElementById('sumValDistance').innerText;
+        var runs = document.getElementById('sumValRuns').innerText;
+        var pace = document.getElementById('sumValPace').innerText;
+        var strain = document.getElementById('sumValStrain').innerText;
+        
+        var text = '🏃‍♂️ Weekly Running Performance Summary\n' +
+          '📅 Date: ' + new Date().toLocaleDateString() + '\n' +
+          '📏 Total Distance: ' + dist + '\n' +
+          '🏃 Sessions: ' + runs + ' runs\n' +
+          '⚡ Avg Pace: ' + pace + '\n' +
+          '🔥 Avg WHOOP Strain: ' + strain + '\n';
+        if (upcomingRaceSetting && upcomingRaceSetting.name) {
+          text += '🎯 Next Race: ' + upcomingRaceSetting.name + ' (' + upcomingRaceSetting.date + ')\n';
+        }
+        text += 'Powered by Run Tracker & WHOOP Telemetry';
+
+        navigator.clipboard.writeText(text).then(function() {
+          showToastNotification('Summary text copied to clipboard! Ready to share.', 'success', 'Copied to Clipboard');
+        }).catch(function(err) {
+          showToastNotification('Could not copy text: ' + err.message, 'error', 'Copy Failed');
+        });
+      } catch (e) {}
     }
 
     function calculatePRsAndGoals(allRuns) {
