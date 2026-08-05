@@ -1447,6 +1447,11 @@ app.get('/', async (req: Request, res: Response) => {
             Calculated from your logged WHOOP telemetry workouts.
           </div>
 
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap;">
+            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">Direct WhatsApp Contact (Optional):</label>
+            <input type="tel" id="whatsappPhoneInput" class="settings-input" placeholder="e.g. 919876543210 (with country code)" style="width: 260px; font-size: 0.82rem; padding: 5px 10px;" />
+          </div>
+
           <div class="summary-card-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
             <button onclick="shareOnWhatsApp()" class="strava-btn" style="background-color: #25D366; color: white;" id="whatsappShareBtn">
               Share on WhatsApp
@@ -2406,6 +2411,9 @@ app.get('/', async (req: Request, res: Response) => {
         var runs = document.getElementById('sumValRuns').innerText;
         var pace = document.getElementById('sumValPace').innerText;
         var strain = document.getElementById('sumValStrain').innerText;
+
+        var phoneInp = document.getElementById('whatsappPhoneInput');
+        var targetPhone = phoneInp ? phoneInp.value.replace(/[^0-9]/g, '') : '';
         
         var text = '*Weekly Running Performance Summary*\\n' +
           'Date: ' + new Date().toLocaleDateString() + '\\n' +
@@ -2418,6 +2426,10 @@ app.get('/', async (req: Request, res: Response) => {
           text += 'Upcoming Race: ' + upcomingRaceSetting.name + raceDistStrWa + ' on ' + (upcomingRaceSetting.date || '') + '\\n';
         }
         text += '\\nTracked with WHOOP Telemetry & Run Tracker';
+
+        var whatsappUrl = targetPhone && targetPhone.length >= 7 
+          ? ('https://wa.me/' + targetPhone + '?text=' + encodeURIComponent(text))
+          : ('https://api.whatsapp.com/send?text=' + encodeURIComponent(text));
 
         var canvas = document.createElement('canvas');
         canvas.width = 800;
@@ -2518,7 +2530,7 @@ app.get('/', async (req: Request, res: Response) => {
 
         canvas.toBlob(async function(blob) {
           if (!blob) {
-            window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+            window.open(whatsappUrl, '_blank');
             btn.innerText = 'Share on WhatsApp';
             btn.disabled = false;
             return;
@@ -2526,7 +2538,14 @@ app.get('/', async (req: Request, res: Response) => {
 
           var file = new File([blob], 'Weekly_Running_Report.png', { type: 'image/png' });
 
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          if (targetPhone && targetPhone.length >= 7) {
+            var link = document.createElement('a');
+            link.download = 'Weekly_Running_Report.png';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            window.open(whatsappUrl, '_blank');
+            showToastNotification('PNG downloaded! Opening direct chat with +' + targetPhone, 'success', 'Direct WhatsApp');
+          } else if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
               await navigator.share({
                 title: 'Weekly Running Performance Report',
@@ -2536,7 +2555,7 @@ app.get('/', async (req: Request, res: Response) => {
               showToastNotification('Report Card PNG image and text shared to WhatsApp!', 'success', 'WhatsApp Share');
             } catch (shareErr) {
               if (shareErr.name !== 'AbortError') {
-                window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+                window.open(whatsappUrl, '_blank');
               }
             }
           } else {
@@ -2544,7 +2563,7 @@ app.get('/', async (req: Request, res: Response) => {
             link.download = 'Weekly_Running_Report.png';
             link.href = URL.createObjectURL(blob);
             link.click();
-            window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+            window.open(whatsappUrl, '_blank');
             showToastNotification('Report PNG downloaded! Select WhatsApp to send image + caption.', 'success', 'Image Downloaded');
           }
           btn.innerText = 'Share on WhatsApp';
