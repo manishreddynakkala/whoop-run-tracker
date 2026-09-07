@@ -1977,23 +1977,25 @@ app.get('/', async (req: Request, res: Response) => {
       var lightBtn = document.getElementById('themeLightBtn');
       var darkBtn = document.getElementById('themeDarkBtn');
 
+      var ChartLib = typeof Chart !== 'undefined' ? Chart : (window.Chart || null);
+
       if (mode === 'dark') {
         document.body.classList.add('dark-mode');
         localStorage.setItem('theme', 'dark');
         if (lightBtn) lightBtn.classList.remove('active');
         if (darkBtn) darkBtn.classList.add('active');
-        if (window.Chart) Chart.defaults.color = '#94a3b8';
+        if (ChartLib && ChartLib.defaults) ChartLib.defaults.color = '#94a3b8';
       } else {
         document.body.classList.remove('dark-mode');
         localStorage.setItem('theme', 'light');
         if (lightBtn) lightBtn.classList.add('active');
         if (darkBtn) darkBtn.classList.remove('active');
-        if (window.Chart) Chart.defaults.color = '#64748b';
+        if (ChartLib && ChartLib.defaults) ChartLib.defaults.color = '#64748b';
       }
 
       if (triggerRender) {
         await syncSettingsToServer();
-        if (allRunsCache.length > 0) {
+        if (allRunsCache && allRunsCache.length > 0) {
           renderCharts(allRunsCache);
         }
       }
@@ -2013,7 +2015,7 @@ app.get('/', async (req: Request, res: Response) => {
         btn.innerText = 'Save Goal';
         btn.disabled = false;
         showToastNotification('Monthly Target Goal updated to ' + val + ' km across all devices!', 'success', 'Goal Saved');
-        if (allRunsCache.length > 0) {
+        if (allRunsCache && allRunsCache.length > 0) {
           calculatePRsAndGoals(allRunsCache);
         }
       } else {
@@ -2021,8 +2023,6 @@ app.get('/', async (req: Request, res: Response) => {
         btn.disabled = false;
       }
     }
-
-    initSettings();
 
     function switchTab(tabId, btnEl) {
       try {
@@ -2641,7 +2641,8 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     function renderCharts(runs) {
-      if (!window.Chart) return;
+      var ChartLib = typeof Chart !== 'undefined' ? Chart : (window.Chart || null);
+      if (!ChartLib) return;
 
       try {
         var isDark = document.body.classList.contains('dark-mode');
@@ -2758,7 +2759,7 @@ app.get('/', async (req: Request, res: Response) => {
         var canvas1 = document.getElementById('chartDistancePace');
         if (canvas1) {
           var ctx1 = canvas1.getContext('2d');
-          chartInstanceDistancePace = new Chart(ctx1, {
+          chartInstanceDistancePace = new ChartLib(ctx1, {
             type: 'bar',
             data: {
               labels: labels,
@@ -2839,7 +2840,7 @@ app.get('/', async (req: Request, res: Response) => {
         var canvas2 = document.getElementById('chartHrZones');
         if (canvas2) {
           var ctx2 = canvas2.getContext('2d');
-          chartInstanceHrZones = new Chart(ctx2, {
+          chartInstanceHrZones = new ChartLib(ctx2, {
             type: 'doughnut',
             data: {
               labels: ['Zone 1 (Recovery)', 'Zone 2 (Aerobic Base)', 'Zone 3 (Tempo)', 'Zone 4 (Threshold)', 'Zone 5 (Anaerobic Peak)'],
@@ -2870,7 +2871,7 @@ app.get('/', async (req: Request, res: Response) => {
         var canvas3 = document.getElementById('chartStrainHr');
         if (canvas3) {
           var ctx3 = canvas3.getContext('2d');
-          chartInstanceStrainHr = new Chart(ctx3, {
+          chartInstanceStrainHr = new ChartLib(ctx3, {
             type: 'line',
             data: {
               labels: labels,
@@ -2944,7 +2945,7 @@ app.get('/', async (req: Request, res: Response) => {
         var canvas4 = document.getElementById('chartWeeklyMileage');
         if (canvas4) {
           var ctx4 = canvas4.getContext('2d');
-          chartInstanceWeeklyMileage = new Chart(ctx4, {
+          chartInstanceWeeklyMileage = new ChartLib(ctx4, {
             type: 'bar',
             data: {
               labels: weekLabels.map(function(l) { return 'Wk of ' + l; }),
@@ -2997,7 +2998,7 @@ app.get('/', async (req: Request, res: Response) => {
             return '#ef4444';
           });
 
-          chartInstanceRecoveryCorrelation = new Chart(ctx5, {
+          chartInstanceRecoveryCorrelation = new ChartLib(ctx5, {
             type: 'bar',
             data: {
               labels: labels,
@@ -3087,6 +3088,9 @@ app.get('/', async (req: Request, res: Response) => {
 
         if (!sourceChart) return;
 
+        var ChartLib = typeof Chart !== 'undefined' ? Chart : (window.Chart || null);
+        if (!ChartLib) return;
+
         document.getElementById('modalChartTitle').innerText = title;
         var modal = document.getElementById('zoomModal');
         modal.classList.add('active');
@@ -3096,7 +3100,7 @@ app.get('/', async (req: Request, res: Response) => {
         var modalCanvas = document.getElementById('modalChartCanvas');
         if (modalCanvas) {
           var modalCtx = modalCanvas.getContext('2d');
-          modalChartInstance = new Chart(modalCtx, {
+          modalChartInstance = new ChartLib(modalCtx, {
             type: sourceChart.config.type,
             data: JSON.parse(JSON.stringify(sourceChart.config.data)),
             options: Object.assign({}, sourceChart.config.options, {
@@ -3206,6 +3210,7 @@ app.get('/', async (req: Request, res: Response) => {
     }
 
     // Initial load
+    initSettings();
     loadRuns();
   </script>
 </body>
