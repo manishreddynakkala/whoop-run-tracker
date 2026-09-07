@@ -1292,15 +1292,15 @@ app.get('/', async (req: Request, res: Response) => {
         </div>
       </div>
 
-      <!-- 1. AI Running Coach Insights Banner (Powered by Groq LLM) -->
+      <!-- 1. AI Running Coach Next Workout Recommendation (Powered by Groq LLM) -->
       <div class="insights-card">
         <div class="insights-header-group">
           <div class="insights-header">
-            AI Running Coach Insights <span class="ai-badge-pill">Llama 3.3 70B</span>
+            AI Next Run Workout Recommendation <span class="ai-badge-pill">Llama 3.3 70B</span>
           </div>
-          <button onclick="fetchAIInsights(true)" class="ai-refresh-btn" id="aiRefreshBtn">Refresh AI Insights</button>
+          <button onclick="fetchAIInsights(true)" class="ai-refresh-btn" id="aiRefreshBtn">Refresh Workout Recommendation</button>
         </div>
-        <div class="insights-text" id="insightsContent">Analyzing your latest 10 running activities with Llama 3.3 AI...</div>
+        <div class="insights-text" id="insightsContent">Analyzing your recovery, latest 10 runs & upcoming race goal with Llama 3.3 AI...</div>
         <div class="ai-source-tag" id="aiSourceTag">Engine: Powered by Groq Llama 3.3 70B AI</div>
       </div>
 
@@ -1751,39 +1751,49 @@ app.get('/', async (req: Request, res: Response) => {
       } catch (err) {}
     }
 
-    // Fetch Performance Trend Insights for Latest 10 Runs (Groq LLM)
+    // Fetch Next Run Workout Recommendation (Groq LLM / Analytics Engine)
     async function fetchAIInsights(isManualRefresh) {
       if (isManualRefresh === undefined) isManualRefresh = false;
       var el = document.getElementById('insightsContent');
       var tagEl = document.getElementById('aiSourceTag');
       var btn = document.getElementById('aiRefreshBtn');
       if (btn) {
-        btn.innerText = 'Analyzing...';
+        btn.innerText = 'Prescribing...';
         btn.disabled = true;
       }
-      if (isManualRefresh) {
-        el.innerText = 'AI Running Coach is analyzing your latest 10 workouts with Groq Llama 3.3...';
+      if (isManualRefresh && el) {
+        el.innerText = 'AI Coach is analyzing recovery, recent training load & upcoming race target...';
       }
 
       if (!allRunsCache || allRunsCache.length === 0) {
-        el.innerText = 'No running workout data available for analysis.';
-        if (btn) { btn.innerText = 'Refresh AI Insights'; btn.disabled = false; }
+        if (el) el.innerText = 'No running workout data available for analysis.';
+        if (btn) { btn.innerText = 'Refresh Workout Recommendation'; btn.disabled = false; }
         return;
       }
 
       try {
+        var recScoreVal = null;
+        if (allRunsCache[0]) {
+          if (allRunsCache[0].recovery_score) recScoreVal = Number(allRunsCache[0].recovery_score);
+          else if (allRunsCache[0].raw_json && allRunsCache[0].raw_json.recovery_score) recScoreVal = Number(allRunsCache[0].raw_json.recovery_score);
+        }
+
         var res = await fetch('/api/insights', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ runs: allRunsCache })
+          body: JSON.stringify({
+            runs: allRunsCache,
+            upcomingRace: upcomingRaceSetting || null,
+            recoveryScore: recScoreVal
+          })
         });
         var data = await res.json();
-        if (data && data.insight) {
+        if (data && data.insight && el) {
           el.innerText = data.insight;
           if (tagEl) {
             tagEl.innerText = data.source === 'groq' 
-              ? 'Engine: Powered by Groq Llama 3.3 70B AI' 
-              : 'Engine: Powered by Analytical Performance AI';
+              ? 'Engine: Powered by Groq Llama 3.3 70B AI Running Coach' 
+              : 'Engine: Powered by Analytical Race Training AI';
           }
         } else {
           renderLatest10Insights(allRunsCache);
@@ -1792,7 +1802,7 @@ app.get('/', async (req: Request, res: Response) => {
         renderLatest10Insights(allRunsCache);
       } finally {
         if (btn) {
-          btn.innerText = 'Refresh AI Insights';
+          btn.innerText = 'Refresh Workout Recommendation';
           btn.disabled = false;
         }
       }
@@ -2495,22 +2505,33 @@ app.get('/', async (req: Request, res: Response) => {
       var el = document.getElementById('insightsContent');
       if (!el) return;
       if (!allRuns || allRuns.length === 0) {
-        el.innerText = 'No running data available.';
+        el.innerText = 'No running workout data available.';
         return;
       }
 
       try {
-        var latest10 = [...allRuns]
-          .sort(function(a, b) { return new Date(b.start_time).getTime() - new Date(a.start_time).getTime(); })
-          .slice(0, 10);
+        var sorted = [...allRuns].sort(function(a, b) { return new Date(b.start_time).getTime() - new Date(a.start_time).getTime(); });
+        var latest10 = sorted.slice(0, 10);
+        var mostRecentRun = sorted[0];
 
         var totalDistKm = 0;
         var totalPaceDistKm = 0;
         var totalPaceDurationMs = 0;
-        var totalStrain = 0;
-        var strainCount = 0;
-        var totalAvgHr = 0;
-        var hrCount = 0;
+        var now = new Date();
+        var thirtyDaysAgo = now.getTime() - (30 * 24 * 60 * 60 * 1000);
+        var longRunCeilingKm = 0;
+
+        sorted.forEach(function(r) {
+          var distKm = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters)/1000 : 0);
+          if (distKm === 0 && r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+            distKm = Number(r.raw_json.score.distance_meter) / 1000;
+          }
+          var t = new Date(r.start_time).getTime();
+          if (t >= thirtyDaysAgo && distKm > longRunCeilingKm) {
+            longRunCeilingKm = distKm;
+          }
+        });
+        if (longRunCeilingKm === 0) longRunCeilingKm = 6;
 
         latest10.forEach(function(r) {
           var distKm = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters)/1000 : 0);
@@ -2522,31 +2543,77 @@ app.get('/', async (req: Request, res: Response) => {
             totalPaceDistKm += distKm;
             totalPaceDurationMs += Number(r.duration_ms);
           }
-          if (r.strain) { totalStrain += Number(r.strain); strainCount++; }
-          if (r.average_heart_rate) { totalAvgHr += Number(r.average_heart_rate); hrCount++; }
         });
 
-        var avgPaceStr = calcPaceString(totalPaceDurationMs, totalPaceDistKm);
-        var avgStrainVal = strainCount > 0 ? (totalStrain / strainCount) : 0;
-        var avgHrVal = hrCount > 0 ? Math.round(totalAvgHr / hrCount) : null;
+        var avgPaceDec = totalPaceDistKm > 0 ? (totalPaceDurationMs / 60000) / totalPaceDistKm : 5.5;
+        var restDays = Math.max(0, Math.floor((now.getTime() - new Date(mostRecentRun.start_time).getTime()) / (1000 * 60 * 60 * 24)));
 
-        var trendMsg = 'Across your latest ' + latest10.length + ' runs, you logged a total of ' + totalDistKm.toFixed(2) + ' km at an average pace of ' + avgPaceStr + '.';
+        var recScore = 80;
+        if (mostRecentRun.recovery_score) recScore = Number(mostRecentRun.recovery_score);
+        else if (mostRecentRun.raw_json && mostRecentRun.raw_json.recovery_score) recScore = Number(mostRecentRun.raw_json.recovery_score);
 
-        if (avgStrainVal > 0) {
-          trendMsg += ' Your workouts averaged a WHOOP strain of ' + avgStrainVal.toFixed(1) + '/21';
+        var raceName = upcomingRaceSetting && upcomingRaceSetting.name ? upcomingRaceSetting.name : 'Upcoming Race';
+        var raceDistKm = upcomingRaceSetting && upcomingRaceSetting.distance ? Number(upcomingRaceSetting.distance) : 10;
+        var raceDate = upcomingRaceSetting && upcomingRaceSetting.date ? upcomingRaceSetting.date : '';
+        var daysToRace = -1;
+        var trainingPhase = 'Base Building Phase';
+
+        if (raceDate) {
+          var raceTime = new Date(raceDate + 'T00:00:00').getTime();
+          daysToRace = Math.ceil((raceTime - now.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysToRace <= 0) trainingPhase = 'Race Week / Recovery';
+          else if (daysToRace <= 14) trainingPhase = 'Tapering Phase (' + daysToRace + ' days to race)';
+          else if (daysToRace <= 42) trainingPhase = 'Peak Preparation Phase (' + daysToRace + ' days to race)';
+          else trainingPhase = 'Base Endurance Building (' + daysToRace + ' days to race)';
         }
-        if (avgHrVal) {
-          trendMsg += ' with an average heart rate of ' + avgHrVal + ' BPM.';
-        } else {
-          trendMsg += '.';
+
+        var workoutTitle = '🏃 Zone 2 Aerobic Endurance Run';
+        var targetDist = Math.min(raceDistKm * 0.6, Math.max(6, longRunCeilingKm * 0.7));
+        var targetPaceMin = avgPaceDec + 0.15;
+        var targetPaceMax = avgPaceDec + 0.45;
+        var targetStrainCap = 'Target Strain 10.5 - 12.5 | Keep HR < 148 BPM';
+        var rationale = 'With ' + recScore + '% recovery and ' + restDays + ' rest day(s), focus on steady aerobic efficiency to build stamina for your ' + raceDistKm.toFixed(1) + ' km goal without accumulating muscle fatigue.';
+
+        if (recScore < 34) {
+          workoutTitle = '🧘 Active Recovery & Mobility Jog';
+          targetDist = Math.min(4, Math.max(2.5, longRunCeilingKm * 0.3));
+          targetPaceMin = avgPaceDec + 0.75;
+          targetPaceMax = avgPaceDec + 1.25;
+          targetStrainCap = 'Strain Cap < 8.5 | Keep HR < 135 BPM';
+          rationale = 'Your WHOOP recovery is in the Red zone (' + recScore + '%). Prioritize gentle cardiovascular flush today to restore autonomic balance before your next key session.';
+        } else if (daysToRace > 0 && daysToRace <= 14) {
+          workoutTitle = '⚡ Pre-Race Taper Tune-up Run';
+          targetDist = Math.min(6, Math.max(4, raceDistKm * 0.35));
+          targetPaceMin = avgPaceDec - 0.1;
+          targetPaceMax = avgPaceDec + 0.15;
+          targetStrainCap = 'Strain Cap 10.0 | Short Strides Included';
+          rationale = 'With ' + daysToRace + ' days to ' + raceName + ', maintain neuromuscular sharpness with easy volume and 4-6 strides while tapering fatigue for peak race readiness.';
+        } else if (recScore >= 67 && restDays >= 1) {
+          workoutTitle = '🔥 Aerobic Tempo & Threshold Builder';
+          targetDist = Math.min(raceDistKm * 0.75, Math.max(7, longRunCeilingKm * 0.85));
+          targetPaceMin = avgPaceDec - 0.25;
+          targetPaceMax = avgPaceDec + 0.05;
+          targetStrainCap = 'Target Strain 13.5 - 15.5 | Zone 3-4 Threshold';
+          rationale = 'Your Green recovery (' + recScore + '%) and rest day allow for higher quality training. Today’s tempo session will raise lactate threshold and race stamina.';
         }
 
-        if (latest10.length >= 5) {
-          trendMsg += ' Solid execution across recent sessions!';
-        }
+        var fmtPace = function(dec) {
+          var m = Math.floor(dec);
+          var s = Math.round((dec - m) * 60);
+          return m + ':' + (s < 10 ? '0' + s : s);
+        };
 
-        el.innerText = trendMsg;
-      } catch (e) {}
+        var output = '🎯 Next Workout: ' + workoutTitle + '\n' +
+          '• Prescribed Distance: ' + targetDist.toFixed(1) + ' km (~' + Math.round(targetDist * targetPaceMin) + '–' + Math.round(targetDist * targetPaceMax) + ' mins)\n' +
+          '• Target Pace: ' + fmtPace(targetPaceMin) + ' – ' + fmtPace(targetPaceMax) + ' min/km\n' +
+          '• Target WHOOP Strain: ' + targetStrainCap + '\n' +
+          '• Training Phase: ' + trainingPhase + '\n' +
+          '• Coach Rationale: ' + rationale;
+
+        el.innerText = output;
+      } catch (e) {
+        console.error('renderLatest10Insights error:', e);
+      }
     }
 
     function renderCharts(runs) {
@@ -3123,55 +3190,153 @@ app.get('/', async (req: Request, res: Response) => {
   res.send(html);
 });
 
-// Performance Trend Insights API Endpoint (Powered by Groq Llama 3.3 70B)
+// Next Run Workout Recommendation API Endpoint (Powered by Groq Llama 3.3 70B & Telemetry Engine)
 app.post('/api/insights', async (req: Request, res: Response) => {
-  const { runs } = req.body;
+  const { runs, upcomingRace, recoveryScore } = req.body;
   if (!runs || !Array.isArray(runs) || runs.length === 0) {
-    return res.json({ insight: 'No running activities available for analysis.' });
+    return res.json({ insight: 'No running workout data available for workout prescription.' });
   }
 
-  // Sort chronologically descending and pick top 10 runs
-  const latest10 = [...runs]
-    .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
-    .slice(0, 10);
+  // 1. Sort Chronologically (Newest First)
+  const sortedRuns = [...runs].sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+  const latest10 = sortedRuns.slice(0, 10);
+  const mostRecentRun = sortedRuns[0];
+
+  // 2. Rest Days Calculation
+  const now = new Date();
+  const lastRunTime = new Date(mostRecentRun.start_time).getTime();
+  const restDays = Math.max(0, Math.floor((now.getTime() - lastRunTime) / (1000 * 60 * 60 * 24)));
+
+  // 3. 7-Day Cumulative Mileage & Cumulative Strain
+  const sevenDaysAgo = now.getTime() - (7 * 24 * 60 * 60 * 1000);
+  let sevenDayDistKm = 0;
+  let sevenDayStrain = 0;
+  sortedRuns.forEach(r => {
+    const t = new Date(r.start_time).getTime();
+    if (t >= sevenDaysAgo) {
+      let dist = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters) / 1000 : 0);
+      if (dist === 0 && r.raw_json?.score?.distance_meter) dist = Number(r.raw_json.score.distance_meter) / 1000;
+      sevenDayDistKm += dist;
+      if (r.strain) sevenDayStrain += Number(r.strain);
+    }
+  });
+
+  // 4. 30-Day Long Run Ceiling
+  const thirtyDaysAgo = now.getTime() - (30 * 24 * 60 * 60 * 1000);
+  let longRunCeilingKm = 0;
+  sortedRuns.forEach(r => {
+    const t = new Date(r.start_time).getTime();
+    if (t >= thirtyDaysAgo) {
+      let dist = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters) / 1000 : 0);
+      if (dist === 0 && r.raw_json?.score?.distance_meter) dist = Number(r.raw_json.score.distance_meter) / 1000;
+      if (dist > longRunCeilingKm) longRunCeilingKm = dist;
+    }
+  });
+  if (longRunCeilingKm === 0) longRunCeilingKm = 6;
+
+  // 5. Recent 10 Runs Performance Metrics (Paces, HR, Strain)
+  let totalDistKm = 0;
+  let totalPaceDist = 0;
+  let totalPaceMs = 0;
+  let totalStrain = 0;
+  let strainCount = 0;
+  let totalHr = 0;
+  let hrCount = 0;
+
+  const runHistoryText = latest10.map((r, i) => {
+    const d = new Date(r.start_time).toLocaleDateString([], { month: 'short', day: 'numeric' });
+    let dist = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters) / 1000 : 0);
+    if (dist === 0 && r.raw_json?.score?.distance_meter) dist = Number(r.raw_json.score.distance_meter) / 1000;
+    totalDistKm += dist;
+    let paceStr = 'N/A';
+    if (dist > 0.1 && r.duration_ms) {
+      totalPaceDist += dist;
+      totalPaceMs += Number(r.duration_ms);
+      const paceDec = (r.duration_ms / 60000) / dist;
+      const mins = Math.floor(paceDec);
+      const secs = Math.round((paceDec - mins) * 60);
+      paceStr = `${mins}:${secs < 10 ? '0' + secs : secs}/km`;
+    }
+    if (r.strain) { totalStrain += Number(r.strain); strainCount++; }
+    if (r.average_heart_rate) { totalHr += Number(r.average_heart_rate); hrCount++; }
+    const hr = r.average_heart_rate || 'N/A';
+    const strain = r.strain ? Number(r.strain).toFixed(1) : 'N/A';
+    return `• Run ${i + 1} (${d}): ${dist > 0 ? dist.toFixed(2) + ' km' : 'Indoor Run'}, Pace: ${paceStr}, HR: ${hr} BPM, Strain: ${strain}/21`;
+  }).join('\n');
+
+  const avgPaceDec = totalPaceDist > 0 ? (totalPaceMs / 60000) / totalPaceDist : 5.5;
+  const avgStrain = strainCount > 0 ? (totalStrain / strainCount) : 12;
+  const avgHr = hrCount > 0 ? Math.round(totalHr / hrCount) : 152;
+
+  // 6. Upcoming Race Analysis & Phase Detection
+  let raceName = upcomingRace?.name || 'Upcoming Race';
+  let raceDistKm = upcomingRace?.distance ? Number(upcomingRace.distance) : 10;
+  let raceDate = upcomingRace?.date || '';
+  let daysToRace = -1;
+  let trainingPhase = 'Base Building Phase';
+
+  if (raceDate) {
+    const raceTime = new Date(raceDate + 'T00:00:00').getTime();
+    daysToRace = Math.ceil((raceTime - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysToRace <= 0) {
+      trainingPhase = 'Race Week / Recovery Phase';
+    } else if (daysToRace <= 14) {
+      trainingPhase = `Tapering Phase (${daysToRace} days to race)`;
+    } else if (daysToRace <= 42) {
+      trainingPhase = `Peak Preparation Phase (${daysToRace} days to race)`;
+    } else {
+      trainingPhase = `Base Endurance Building Phase (${daysToRace} days to race)`;
+    }
+  } else {
+    trainingPhase = 'General Aerobic Conditioning';
+  }
+
+  // 7. WHOOP Recovery Assessment
+  const recScore = typeof recoveryScore === 'number' ? recoveryScore : (mostRecentRun.recovery_score ? Number(mostRecentRun.recovery_score) : 80);
+  const recoveryZone = recScore >= 67 ? 'Green (Optimal Capacity)' : (recScore >= 34 ? 'Yellow (Moderate Capacity)' : 'Red (Low Rest/Recovery Needed)');
 
   if (GROQ_API_KEY) {
     try {
-      const summaryText = latest10.map((r, i) => {
-        const d = new Date(r.start_time).toLocaleDateString([], { month: 'numeric', day: 'numeric' });
-        let dist = 0;
-        if (r.distance_km) dist = Number(r.distance_km);
-        else if (r.distance_meters) dist = Number(r.distance_meters) / 1000;
-        else if (r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
-          dist = Number(r.raw_json.score.distance_meter) / 1000;
-        }
-        
-        let paceStr = 'N/A';
-        if (dist > 0.1 && r.duration_ms) {
-          const totalMins = (r.duration_ms / 60000);
-          const paceDec = totalMins / dist;
-          const mins = Math.floor(paceDec);
-          const secs = Math.round((paceDec - mins) * 60);
-          paceStr = `${mins}:${secs < 10 ? '0' + secs : secs}/km`;
-        }
+      const prompt = `You are an elite endurance running coach prescribing the single NEXT workout for an athlete based on their WHOOP biometric telemetry and upcoming race goal:
 
-        const strain = r.strain ? Number(r.strain).toFixed(1) : 'N/A';
-        const hr = r.average_heart_rate || 'N/A';
-        return `Run ${i + 1} (${d}): ${dist > 0 ? dist.toFixed(2) + ' km' : 'Indoor Run'}, Pace: ${paceStr}, WHOOP Strain: ${strain}/21, Avg HR: ${hr} BPM`;
-      }).join('\n');
+=== ATHLETE TELEMETRY & RACE CONTEXT ===
+• Upcoming Race: ${raceName} (${raceDistKm.toFixed(1)} km) on ${raceDate || 'TBD'}
+• Race Countdown: ${daysToRace > 0 ? `${daysToRace} days remaining` : 'No race date set'}
+• Training Phase: ${trainingPhase}
+• Current WHOOP Recovery: ${recScore}% [${recoveryZone}]
+• Rest Days Since Last Run: ${restDays} days
+• 7-Day Cumulative Mileage: ${sevenDayDistKm.toFixed(2)} km (Cumulative Strain: ${sevenDayStrain.toFixed(1)})
+• 30-Day Long Run Ceiling: ${longRunCeilingKm.toFixed(2)} km
+• 10-Run Average Baseline Pace: ${Math.floor(avgPaceDec)}:${Math.round((avgPaceDec - Math.floor(avgPaceDec)) * 60).toString().padStart(2, '0')}/km | Avg HR: ${avgHr} BPM
 
-      const prompt = `You are an elite endurance running coach analyzing a runner's latest 10 workouts from their WHOOP telemetry data:\n${summaryText}\n\nProvide a concise, 2-3 sentence personalized coach insight covering:\n1. Performance, pace progression & consistency across these 10 runs.\n2. Cardiovascular response (heart rate efficiency vs WHOOP strain balance).\n3. A specific, actionable coaching tip for their next workouts.\nKeep it inspiring, professional, direct, and tailored strictly to their numbers. Write a single clean paragraph without markdown headers or bullet points.`;
+=== RECENT 10 RUNS LOG ===
+${runHistoryText}
+
+=== YOUR COACHING TASK ===
+Prescribe the exact NEXT run workout to maximize readiness for their ${raceDistKm.toFixed(1)} km race. Follow these physiological rules:
+1. If Recovery is RED (<34%): Prescribe a very light Active Recovery Jog (3-4 km very slow) or Cross-training / Rest Day.
+2. If Recovery is YELLOW (34-66%): Prescribe a steady Aerobic Zone 2 endurance or easy maintenance run (keep strain under 12).
+3. If Recovery is GREEN (67-100%): Prescribe a key stimulus (e.g. Progressive Long Run, Tempo/Threshold Intervals, or High-Efficiency Base Build).
+4. If in Taper Phase (<= 14 days): Reduce volume, keep sharp short race-pace strides, protect recovery.
+
+=== FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS (Keep bullet layout clean with emojis, no markdown headers #) ===
+🎯 Next Workout: [Workout Name e.g. 10 km Zone 2 Aerobic Base Builder]
+• Prescribed Distance: [X.X km (~XX-XX mins)]
+• Target Pace: [X:XX – X:XX min/km]
+• Target WHOOP Strain: [Target Strain e.g. 10.0 - 12.5 | Keep Heart Rate < XXX BPM]
+• Training Phase: ${trainingPhase}
+• Coach Rationale: [2-3 concise, inspiring sentences explaining why this specific workout is prescribed today based on their ${recScore}% recovery, rest days, and ${raceDistKm.toFixed(1)} km race timeline.]`;
 
       const groqRes = await axios.post(
         'https://api.groq.com/openai/v1/chat/completions',
         {
           model: 'llama-3.3-70b-versatile',
           messages: [
-            { role: 'system', content: 'You are an expert endurance running coach.' },
+            { role: 'system', content: 'You are an elite endurance running coach specializing in science-based marathon and half marathon training.' },
             { role: 'user', content: prompt }
           ],
-          temperature: 0.7,
-          max_tokens: 300
+          temperature: 0.65,
+          max_tokens: 380
         },
         {
           headers: {
@@ -3192,56 +3357,57 @@ app.post('/api/insights', async (req: Request, res: Response) => {
   }
 
   // Fast Native Analytical Performance Engine Fallback
-  let totalDistKm = 0;
-  let totalPaceDist = 0;
-  let totalPaceMs = 0;
-  let totalStrain = 0;
-  let strainCount = 0;
-  let totalHr = 0;
-  let hrCount = 0;
+  let workoutTitle = '';
+  let targetDist = 0;
+  let targetPaceMin = 0;
+  let targetPaceMax = 0;
+  let targetStrainCap = '';
+  let rationale = '';
 
-  latest10.forEach(r => {
-    let dist = r.distance_km ? Number(r.distance_km) : (r.distance_meters ? Number(r.distance_meters) / 1000 : 0);
-    if (dist === 0 && r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
-      dist = Number(r.raw_json.score.distance_meter) / 1000;
-    }
-    totalDistKm += dist;
-    if (dist > 0.1 && r.duration_ms) {
-      totalPaceDist += dist;
-      totalPaceMs += Number(r.duration_ms);
-    }
-    if (r.strain) { totalStrain += Number(r.strain); strainCount++; }
-    if (r.average_heart_rate) { totalHr += Number(r.average_heart_rate); hrCount++; }
-  });
-
-  const avgPaceDec = totalPaceDist > 0 ? (totalPaceMs / 60000) / totalPaceDist : null;
-  const avgStrain = strainCount > 0 ? (totalStrain / strainCount) : 0;
-  const avgHr = hrCount > 0 ? Math.round(totalHr / hrCount) : null;
-
-  let paceStr = 'N/A';
-  if (avgPaceDec) {
-    const mins = Math.floor(avgPaceDec);
-    const secs = Math.round((avgPaceDec - mins) * 60);
-    paceStr = `${mins}:${secs < 10 ? '0' + secs : secs}/km`;
-  }
-
-  let trendText = `Across your last ${latest10.length} runs, you logged a total of ${totalDistKm.toFixed(2)} km averaging ${paceStr} per kilometer.`;
-  
-  if (avgStrain > 14) {
-    trendText += ` Your average WHOOP strain of ${avgStrain.toFixed(1)}/21 shows high exertion and strong cardiovascular load.`;
+  if (recScore < 34) {
+    workoutTitle = '🧘 Active Recovery & Mobility Jog';
+    targetDist = Math.min(4, Math.max(2.5, longRunCeilingKm * 0.3));
+    targetPaceMin = avgPaceDec + 0.75;
+    targetPaceMax = avgPaceDec + 1.25;
+    targetStrainCap = 'Strain Cap < 8.5 | Keep HR < 135 BPM';
+    rationale = `Your WHOOP recovery is in the Red zone (${recScore}%). Prioritize physiological recovery today with an ultra-light aerobic flush or rest to prevent accumulated fatigue before your ${raceDistKm.toFixed(1)} km race.`;
+  } else if (daysToRace > 0 && daysToRace <= 14) {
+    workoutTitle = '⚡ Pre-Race Taper Tune-up Run';
+    targetDist = Math.min(6, Math.max(4, raceDistKm * 0.35));
+    targetPaceMin = avgPaceDec - 0.1;
+    targetPaceMax = avgPaceDec + 0.15;
+    targetStrainCap = 'Strain Cap 10.0 | Short Strides Included';
+    rationale = `With ${daysToRace} days until ${raceName}, you are in the final taper window. Today's focus is maintaining leg turnover and aerobic freshness with moderate distance and short strides while storing glycogen for race day.`;
+  } else if (recScore >= 67 && restDays >= 1) {
+    workoutTitle = '🔥 Aerobic Tempo & Threshold Builder';
+    targetDist = Math.min(raceDistKm * 0.75, Math.max(7, longRunCeilingKm * 0.85));
+    targetPaceMin = avgPaceDec - 0.25;
+    targetPaceMax = avgPaceDec + 0.05;
+    targetStrainCap = 'Target Strain 13.5 - 15.5 | Zone 3-4 Threshold';
+    rationale = `With a strong Green recovery (${recScore}%) and ${restDays} rest day(s), your cardiovascular system is primed for higher stimulus. This tempo workout will lift your lactate threshold and build stamina for your ${raceDistKm.toFixed(1)} km goal.`;
   } else {
-    trendText += ` Workouts maintained a steady cardiovascular response with an average strain of ${avgStrain.toFixed(1)}/21.`;
+    workoutTitle = '🏃 Zone 2 Aerobic Endurance Run';
+    targetDist = Math.min(raceDistKm * 0.6, Math.max(6, longRunCeilingKm * 0.7));
+    targetPaceMin = avgPaceDec + 0.15;
+    targetPaceMax = avgPaceDec + 0.45;
+    targetStrainCap = 'Target Strain 10.5 - 12.5 | Keep HR < 148 BPM';
+    rationale = `With moderate ${recScore}% recovery, focus on building your aerobic base and mitochondrial density. Keep your heart rate strictly in Zone 2 to accumulate quality mileage without overloading muscular recovery.`;
   }
 
-  if (avgHr) {
-    if (avgHr < 155) {
-      trendText += ` Operating at an average heart rate of ${avgHr} BPM demonstrates strong aerobic efficiency in Zone 2-3 base building. Focus on keeping your easy runs light to optimize recovery!`;
-    } else {
-      trendText += ` Operating at an average heart rate of ${avgHr} BPM demonstrates strong high-tempo threshold conditioning. Ensure adequate recovery days between hard sessions!`;
-    }
-  }
+  const fmtPace = (dec: number) => {
+    const m = Math.floor(dec);
+    const s = Math.round((dec - m) * 60);
+    return `${m}:${s < 10 ? '0' + s : s}`;
+  };
 
-  res.json({ insight: trendText, source: 'analytical' });
+  const analyticalWorkout = `🎯 Next Workout: ${workoutTitle}
+• Prescribed Distance: ${targetDist.toFixed(1)} km (~${Math.round(targetDist * targetPaceMin)}–${Math.round(targetDist * targetPaceMax)} mins)
+• Target Pace: ${fmtPace(targetPaceMin)} – ${fmtPace(targetPaceMax)} min/km
+• Target WHOOP Strain: ${targetStrainCap}
+• Training Phase: ${trainingPhase}
+• Coach Rationale: ${rationale}`;
+
+  res.json({ insight: analyticalWorkout, source: 'analytical' });
 });
 
 // Settings API GET Endpoint (Bulletproof Cross-device Sync)
