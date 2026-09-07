@@ -2026,25 +2026,32 @@ app.get('/', async (req: Request, res: Response) => {
 
     function switchTab(tabId, btnEl) {
       try {
-        document.querySelectorAll('.top-tab-btn').forEach(function(b) { b.classList.remove('active'); });
-        document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+        var tabBtns = document.querySelectorAll('.top-tab-btn');
+        tabBtns.forEach(function(b) { b.classList.remove('active'); });
 
-        document.querySelectorAll('.top-tab-btn').forEach(function(b) {
-          if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(tabId) !== -1) {
+        var tabContents = document.querySelectorAll('.tab-content');
+        tabContents.forEach(function(c) { c.classList.remove('active'); });
+
+        tabBtns.forEach(function(b) {
+          var onclickVal = b.getAttribute('onclick') || '';
+          if (onclickVal.indexOf(tabId) !== -1) {
             b.classList.add('active');
           }
         });
+        if (btnEl && btnEl.classList) btnEl.classList.add('active');
 
         var targetContent = document.getElementById(tabId);
         if (targetContent) targetContent.classList.add('active');
 
         if (tabId === 'analyticsTab') {
           setTimeout(function() {
-            if (chartInstanceDistancePace) chartInstanceDistancePace.resize();
-            if (chartInstanceHrZones) chartInstanceHrZones.resize();
-            if (chartInstanceStrainHr) chartInstanceStrainHr.resize();
-            if (chartInstanceWeeklyMileage) chartInstanceWeeklyMileage.resize();
-            if (chartInstanceRecoveryCorrelation) chartInstanceRecoveryCorrelation.resize();
+            try {
+              if (chartInstanceDistancePace) chartInstanceDistancePace.resize();
+              if (chartInstanceHrZones) chartInstanceHrZones.resize();
+              if (chartInstanceStrainHr) chartInstanceStrainHr.resize();
+              if (chartInstanceWeeklyMileage) chartInstanceWeeklyMileage.resize();
+              if (chartInstanceRecoveryCorrelation) chartInstanceRecoveryCorrelation.resize();
+            } catch (ce) {}
           }, 50);
         }
       } catch (e) {
@@ -2107,7 +2114,7 @@ app.get('/', async (req: Request, res: Response) => {
     async function loadRuns() {
       var tbody = document.getElementById('runsTableBody');
       if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-muted)">Loading...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-muted)">Loading workout data...</td></tr>';
       }
 
       try {
@@ -2115,8 +2122,8 @@ app.get('/', async (req: Request, res: Response) => {
         var allData = await allRes.json();
         allRunsCache = allData.runs || [];
 
-        calculatePRsAndGoals(allRunsCache);
-        fetchAIInsights(false);
+        try { calculatePRsAndGoals(allRunsCache); } catch (e) { console.warn('calculatePRsAndGoals non-fatal error:', e); }
+        try { fetchAIInsights(false); } catch (e) { console.warn('fetchAIInsights non-fatal error:', e); }
 
         var filteredRuns = allRunsCache;
         if (currentStartDate || currentEndDate) {
@@ -2165,70 +2172,76 @@ app.get('/', async (req: Request, res: Response) => {
           }
         });
 
-        document.getElementById('kpiRunsCount').innerText = filteredRuns.length;
-        document.getElementById('kpiDistance').innerText = totalDistKm > 0 ? totalDistKm.toFixed(2) + ' km' : '0 km';
-        document.getElementById('kpiAvgPace').innerText = calcPaceString(totalPaceDurationMs, totalPaceDistKm);
-        document.getElementById('kpiCalories').innerText = totalCaloriesKcal > 0 ? totalCaloriesKcal.toLocaleString() + ' kcal' : 'N/A';
+        var runsCountEl = document.getElementById('kpiRunsCount');
+        if (runsCountEl) runsCountEl.innerText = filteredRuns.length;
+        var distEl = document.getElementById('kpiDistance');
+        if (distEl) distEl.innerText = totalDistKm > 0 ? totalDistKm.toFixed(2) + ' km' : '0 km';
+        var paceEl = document.getElementById('kpiAvgPace');
+        if (paceEl) paceEl.innerText = calcPaceString(totalPaceDurationMs, totalPaceDistKm);
+        var calEl = document.getElementById('kpiCalories');
+        if (calEl) calEl.innerText = totalCaloriesKcal > 0 ? totalCaloriesKcal.toLocaleString() + ' kcal' : 'N/A';
 
         var totalMins = Math.round(totalDurationMs / 60000);
         var hours = Math.floor(totalMins / 60);
         var mins = totalMins % 60;
-        document.getElementById('kpiDuration').innerText = hours > 0 ? hours + 'h ' + mins + 'm' : mins + 'm';
+        var durEl = document.getElementById('kpiDuration');
+        if (durEl) durEl.innerText = hours > 0 ? hours + 'h ' + mins + 'm' : mins + 'm';
 
-        document.getElementById('kpiAvgStrain').innerText = strainCount > 0 ? (totalStrain / strainCount).toFixed(1) : 'N/A';
+        var strainEl = document.getElementById('kpiAvgStrain');
+        if (strainEl) strainEl.innerText = strainCount > 0 ? (totalStrain / strainCount).toFixed(1) : 'N/A';
         
         var avgHrVal = hrCount > 0 ? Math.round(totalAvgHr / hrCount) : null;
-        document.getElementById('kpiAvgHr').innerText = avgHrVal ? avgHrVal + ' / ' + maxHrReached + ' bpm' : 'N/A';
+        var hrEl = document.getElementById('kpiAvgHr');
+        if (hrEl) hrEl.innerText = avgHrVal ? avgHrVal + ' / ' + maxHrReached + ' bpm' : 'N/A';
 
-        updateWeeklySummaryReportCard(filteredRuns, totalDistKm, totalPaceDurationMs, totalPaceDistKm, totalStrain, strainCount);
+        try { updateWeeklySummaryReportCard(filteredRuns, totalDistKm, totalPaceDurationMs, totalPaceDistKm, totalStrain, strainCount); } catch (e) {}
 
-        if (!tbody) return;
+        if (tbody) {
+          if (filteredRuns.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-muted)">No running activities found for the selected date period.</td></tr>';
+          } else {
+            tbody.innerHTML = filteredRuns.map(function(r) {
+              var dateStr = new Date(r.start_time).toLocaleString([], {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              });
+              var durationMin = Math.round(r.duration_ms / 60000);
+              
+              var distKmNum = 0;
+              var distKmStr = 'N/A';
+              if (r.distance_km) {
+                distKmNum = Number(r.distance_km);
+                distKmStr = distKmNum.toFixed(2) + ' km';
+              } else if (r.distance_meters) {
+                distKmNum = Number(r.distance_meters) / 1000;
+                distKmStr = distKmNum.toFixed(2) + ' km';
+              } else if (r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
+                distKmNum = Number(r.raw_json.score.distance_meter) / 1000;
+                distKmStr = distKmNum.toFixed(2) + ' km';
+              }
 
-        if (filteredRuns.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: var(--text-muted)">No running activities found for the selected date period.</td></tr>';
-          renderCharts([]);
-          return;
+              var paceStr = calcPaceString(r.duration_ms, distKmNum);
+              var calVal = extractCalories(r);
+              var calStr = calVal ? calVal + ' kcal' : 'N/A';
+
+              return '<tr>' +
+                '<td><strong>' + dateStr + '</strong></td>' +
+                '<td>' + r.sport_name + '</td>' +
+                '<td><span class="badge badge-dist">' + distKmStr + '</span></td>' +
+                '<td><span class="badge">' + paceStr + '</span></td>' +
+                '<td>' + durationMin + ' mins</td>' +
+                '<td><span class="badge">' + (r.strain ? Number(r.strain).toFixed(1) : 'N/A') + '</span></td>' +
+                '<td><span class="badge">' + (r.average_heart_rate || 'N/A') + ' / ' + (r.max_heart_rate || 'N/A') + ' bpm</span></td>' +
+                '<td><span class="badge">' + calStr + '</span></td>' +
+              '</tr>';
+            }).join('');
+          }
         }
 
-        tbody.innerHTML = filteredRuns.map(function(r) {
-          var dateStr = new Date(r.start_time).toLocaleString([], {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          });
-          var durationMin = Math.round(r.duration_ms / 60000);
-          
-          var distKmNum = 0;
-          var distKmStr = 'N/A';
-          if (r.distance_km) {
-            distKmNum = Number(r.distance_km);
-            distKmStr = distKmNum.toFixed(2) + ' km';
-          } else if (r.distance_meters) {
-            distKmNum = Number(r.distance_meters) / 1000;
-            distKmStr = distKmNum.toFixed(2) + ' km';
-          } else if (r.raw_json && r.raw_json.score && r.raw_json.score.distance_meter) {
-            distKmNum = Number(r.raw_json.score.distance_meter) / 1000;
-            distKmStr = distKmNum.toFixed(2) + ' km';
-          }
-
-          var paceStr = calcPaceString(r.duration_ms, distKmNum);
-          var calVal = extractCalories(r);
-          var calStr = calVal ? calVal + ' kcal' : 'N/A';
-
-          return '<tr>' +
-            '<td><strong>' + dateStr + '</strong></td>' +
-            '<td>' + r.sport_name + '</td>' +
-            '<td><span class="badge badge-dist">' + distKmStr + '</span></td>' +
-            '<td><span class="badge">' + paceStr + '</span></td>' +
-            '<td>' + durationMin + ' mins</td>' +
-            '<td><span class="badge">' + (r.strain ? Number(r.strain).toFixed(1) : 'N/A') + '</span></td>' +
-            '<td><span class="badge">' + (r.average_heart_rate || 'N/A') + ' / ' + (r.max_heart_rate || 'N/A') + ' bpm</span></td>' +
-            '<td><span class="badge">' + calStr + '</span></td>' +
-          '</tr>';
-        }).join('');
-
-        renderCharts(filteredRuns);
+        try { renderCharts(filteredRuns); } catch (e) { console.warn('renderCharts non-fatal error:', e); }
 
       } catch (err) {
+        console.error('loadRuns fatal error:', err);
         if (tbody) {
           tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2.5rem; color: #ef4444">Error loading data: ' + err.message + '</td></tr>';
         }
